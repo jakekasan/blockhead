@@ -4,6 +4,7 @@ module.exports = class BlockChain {
   constructor(difficulty) {
     this.blocks = [];
     this.difficulty = difficulty;
+    this.wallets = [];
   }
 
   addBlock(data){

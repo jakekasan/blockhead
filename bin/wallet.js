@@ -13,7 +13,8 @@ module.exports = class Wallet {
     if (amount < this.balance) {
       return false;
     }
-    // otherwise, send money and return true
+
+    
 
     return true;
   }
