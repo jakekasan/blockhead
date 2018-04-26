@@ -8,20 +8,29 @@ const jsrsa = require("jsrsasign");
 const crypto = require("crypto")
 const BlockChain = require("./bin/blockchain.js");
 const Block = require("./bin/block.js");
-const bigInt = require("big-integer")
+const Transaction = require('./bin/transaction.js');
+const bigInt = require("big-integer");
 
 
 var app = express();
 
 app.listen(8080, () => {
-  console.log("Up and running on 8080");
 
-  let mykey = jsrsa.KEYUTIL.generateKeypair("RSA",1024);
-  //console.log(mykey.pubKeyObj);
-  console.log(mykey.prvKeyObj.d.toString());
-  intString = mykey.prvKeyObj.d.toString();
-  console.log(bigInt(intString));
 
-  console.log(bigInt(intString) == mykey.prvKeyObj.d);
+
+  transaction = new Transaction(null,"Admin",100000,[],"Signature!");
+  genesisBlock = new Block(transaction,1);
+  blockchain = new BlockChain(1,genesisBlock);
+
+  adminWallet = Wallet("Admin",blockchain);
+  barryWallet = Wallet("Barry",blockchain);
+  charlieWallet = Wallet("Charlie",blockchain);
+  davidWallet = Wallet("David",blockchain);
+
+  blockchain.addBlock(new Transaction("Admin","Barry",100,transaction));
+  transaction = new Transaction("Barry","Charlie",100);
+  blockchain.addBlock()
+
+
 
 });

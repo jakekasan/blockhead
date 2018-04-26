@@ -13,15 +13,12 @@ function verifySignature(publicKey,data,signature) {
 }
 
 
-
-
 class MyRSA {
   constructor() {
     this.p = getPrime(7)
     this.q = getPrime(5)
     this.n = this.p*this.q;
     this.totn = (this.p-1)*(this.q-1);
-
   }
 
   print(){

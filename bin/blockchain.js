@@ -1,10 +1,18 @@
 const Block = require("./block.js");
+const Transaction = require('./transaction');
 
 module.exports = class BlockChain {
-  constructor(difficulty) {
+  constructor(difficulty,genesisBlock) {
     this.blocks = [];
     this.difficulty = difficulty;
-    this.wallets = [];
+    this.blocks.push(genesisBlock);
+  }
+
+  submitTransaction(transaction){
+    let wallet = new Wallet(transaction.sender,this);
+    if (transaction.inputs != wallet.getInputs(this)) {
+      return false;
+    }
   }
 
   addBlock(data){
