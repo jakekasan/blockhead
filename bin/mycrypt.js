@@ -9,7 +9,7 @@ function verifySignature(publicKey,data,signature) {
     let sig = new jsrsa.crypto.Signature({"alg": "SHA1withRSA"});
     sig.init(publicKey);
     sig.updateString(data);
-    return sig2.verify(signature);
+    return sig.verify(signature);
 }
 
 

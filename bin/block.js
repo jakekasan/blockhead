@@ -10,7 +10,7 @@ module.exports = class Block {
   }
 
   getHash(){
-    return cjs.MD5(this.prevHash + this.data + this.nonce);
+    return cjs.SHA256(this.prevHash + this.data + this.nonce);
   }
 
   mineBlock() {
@@ -29,6 +29,6 @@ module.exports = class Block {
       "Nonce":this.nonce,
       "Previous Hash": this.prevHash
     }
-    console.log(JSON.stringify(data));
+    console.log(JSON.stringify(data,null,2));
   }
 }
