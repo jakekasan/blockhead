@@ -3,23 +3,25 @@ const cjs = require('crypto-js');
 const Transaction = require('./transaction.js')
 
 module.exports = class Wallet {
-  constructor(name,blockchain,privateKey=undefined,publicKey=undefined) {
+  constructor(name,blockchain,privateKey,publicKey) {
     this.blockchain = blockchain;
     this.balance = this.getBalance();
     this.name = name;
-    keyObj = (privateKey) ? jsrsa.KEYUTIL.generateKeypair("RSA",1024) : undefined;
-    this.publicKey = (privateKey) ? publicKey : keyObj.pubKeyObj;
-    this.privateKey = (privateKey) ? privateKey : keyObj.prvKeyObj;
+    this.publicKey = publicKey;
+    this.privateKey = privateKey
+    // let keyObj = jsrsa.KEYUTIL.generateKeypair("RSA",1024);
+    // this.publicKey = keyObj.pubKeyObj;
+    // this.privateKey = keyObj.prvKeyObj;
   }
 
   sendMoney(amount,recipient){
-    if (recipient == this.name | recipient == undefined) {
+    if (recipient == this.publicKey | recipient == undefined) {
       return false;
     }
     if (amount < this.balance) {
       return false;
     }
-    let transaction = new Transaction(this.name,recipient,amount,this.blockchain.getInputs(this.name),this.signTransaction(amount,recipient));
+    let transaction = new Transaction(this.publicKey,recipient,amount,this.blockchain.getInputs(this.name),this.privateKey);
     if (!this.blockchain.submitTransaction(transaction)){
       return false;
     }
@@ -27,15 +29,17 @@ module.exports = class Wallet {
   }
 
   signTransaction(amount,recipient){
+    let sig = jsrsa.crypto.Signature({"alg":"SHA1withRSA"});
+
     let signature = this.name + " sends " + amount.toString() + " to " + recipient;
     return signature;
   }
 
   verifySignature(publicKey,message,signature){
-    let sig = jsrsa.crypto.Signature({"alg":"SHA1withRSA"});
-    sig.init(publicKey);
-    sig.update(message);
-    return sig.verify(signature);
+    //let sig = jsrsa.crypto.Signature({"alg":"SHA1withRSA"});
+    //sig.init(publicKey);
+    //sig.update(message);
+    //return sig.verify(signature);
   }
 
   getInputs(blockchain){

@@ -1,8 +1,12 @@
+const cjs = require('crypto-js');
+const jsrsa = require('jsrsasign');
+
 module.exports = class UserData {
-  constructor(name,passwordHash,prvKey){
+  constructor(name,passwordHash,prvKey,pubKey){
     this.name = name;
     this.passwordHash = passwordHash;
-    this.prvKey = prvKey;
+    this.privateKey = prvKey;
+    this.publicKey = pubKey;
   }
 
   authenticateLogin(passwordHash){
@@ -18,11 +22,5 @@ module.exports = class UserData {
     }
     return undefined;
   }
-  }
-}
 
-class ClassName {
-  constructor() {
-
-  }
 }

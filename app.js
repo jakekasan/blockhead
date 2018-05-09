@@ -20,22 +20,68 @@ var app = express();
 
 app.listen(8080, () => {
 
-  var rsaKeypair = jsrsa.KEYUTIL.generateKeypair("RSA", 1024);
-  let rsaPub = rsaKeypair.pubKeyObj;
-  let rsaPrv = rsaKeypair.prvKeyObj;
-  let message = "sup dude";
+  let bc = new BlockChain(1);
+  bc.print();
 
-  let sig = new jsrsa.crypto.Signature({"alg":"SHA1withRSA"});
-  sig.init(rsaPrv);
-  sig.updateString(message);
-  let signature = sig.sign();
+  //
+  // var rsaKeypair = jsrsa.KEYUTIL.generateKeypair("RSA", 1024);
+  // let rsaPub = rsaKeypair.pubKeyObj;
+  // let rsaPrv = rsaKeypair.prvKeyObj;
+  //
+  // let rsaPubStr = jsrsa.KEYUTIL.getPEM(rsaPub);
+  // let rsaPrvStr = jsrsa.KEYUTIL.getPEM(rsaPrv,"PKCS8PRV");
+  // console.log(rsaPubStr);
+  // console.log(rsaPrvStr);
+  //
+  //
+  // console.log("PEM to keys");
+  // let newPub = jsrsa.KEYUTIL.getKey(rsaPubStr);
+  // let newPrv = jsrsa.KEYUTIL.getKey(rsaPrvStr);
+  //
+  // console.log(newPub);
+  // console.log(newPrv);
+  //
+  // let message = "sup dude";
+  // console.log("Now signing...");
+  // let sig = new jsrsa.crypto.Signature({"alg":"SHA1withRSA"});
+  // sig.init(newPrv);
+  // sig.updateString(message);
+  // let signature = sig.sign();
+  // console.log(signature);
+  //
+  // let sig2 = new jsrsa.crypto.Signature({"alg":"SHA1withRSA"});
+  // sig2.init(newPub);
+  // sig2.updateString(message);
+  // console.log(sig2.verify(signature));
 
-  let sig2 = new jsrsa.crypto.Signature({"alg":"SHA1withRSA"});
-  sig2.init(rsaPub);
-  sig2.updateString(message);
-  console.log(sig2.verify(signature));
+  // console.log("Creating new master key...");
+  //
+  // var masterKeyObj = jsrsa.KEYUTIL.generateKeypair("RSA",1024);
+  // var masterPrivate = masterKeyObj.prvKeyObj;
+  //
+  // console.log("Key created!");
+  //
+  // console.log("Creating transactions...");
+  //
+  // initialData = [];
+  // initialData.push(new Transaction(null,"Admin",100000,[],masterPrivate).getData());
+  // initialData.push(new Transaction(null,"Barry",100000,[],masterPrivate).getData());
+  // initialData.push(new Transaction(null,"Charlie",100000,[],masterPrivate).getData());
+  // initialData.push(new Transaction(null,"David",100000,[],masterPrivate).getData());
+  //
+  // console.log("Creating blockchain...");
+  // var bc = new BlockChain(1,new Block(initialData,1));
+  //
+  // var testWallet = new Wallet("name",bc);
+  //
+  // console.log();
+  //
+  //
 
 
+  //console.log(testWallet.privateKey);
+
+  //runBlockchain();
 });
 
 var runBlockchain = function(){
@@ -88,9 +134,13 @@ var runBlockchain = function(){
     console.log(names);
     console.log("From " + name + " to " + recipient);
   }
-
-
   blockchain.print();
+}
 
 
+let createUsers = function(names){
+  let wallets = [];
+  for (var i = 0; i < names.length; i++) {
+    wallets.push(new Wallet(names[i],bc));
+  }
 }
