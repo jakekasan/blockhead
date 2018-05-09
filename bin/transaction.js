@@ -4,7 +4,7 @@ const jsrsa = require('jsrsasign');
 module.exports = class Transaction {
   constructor(from,to,amount,inputs,prvKey) {
     this.sender = (typeof from === 'string' || from instanceof String) ? from : jsrsa.KEYUTIL.getPEM(from);
-    this.recipient = (typeof to === 'string' || to instanceof String) ? to : jsrsa.KEYUTIL.getPEM(to);;
+    this.recipient = (typeof to === 'string' || to instanceof String) ? to : jsrsa.KEYUTIL.getPEM(to);
     this.amount = amount;
     this.inputs = inputs;
     this.data = {
@@ -13,11 +13,12 @@ module.exports = class Transaction {
       "amount": this.amount,
       "inputs": this.inputs
     };
-    this.id = cjs.SHA256(JSON.stringify(this.data));
+    this.id = cjs.SHA256(JSON.stringify(this.data)).toString(cjs.enc.Hex);
+    prvKey = (typeof prvKey === 'string' || prvKey instanceof String) ? prvKey : jsrsa.KEYUTIL.getPEM(prvKey,"PKCS8PRV");
     this.signature = this.signTransaction(prvKey);
   }
 
-  getData(){
+  getTransactionString(){
     if (!this.signature) {
       return undefined;
     }
@@ -26,17 +27,22 @@ module.exports = class Transaction {
       "data": this.data,
       "signature":this.signature,
     };
-    return transaction;
+    return JSON.stringify(transaction,null,2);
   }
 
   signTransaction(prvKey){
     let sig = new jsrsa.crypto.Signature({'alg': 'SHA1withRSA'});
-    sig.init(prvKey);
-    sig.updateString(JSON.stringify(this.data));
-    return sig.sign(); //.toString("hex");
+    sig.init(jsrsa.KEYUTIL.getKey(prvKey));
+    sig.updateString(this.getDataString());
+    console.log("TRANSACTION - signatureS: ");
+    let signature = sig.sign();
+    console.log(signature);
+    console.log("TRANSACTION - data:");
+    console.log(this.getDataString());
+    return signature.toString();
   }
 
   getDataString(){
-    return JSON.stringify(this.getData());
+    return JSON.stringify(this.data,null,2);
   }
 }

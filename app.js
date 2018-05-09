@@ -38,16 +38,26 @@ app.listen(8080, () => {
   // let newPub = jsrsa.KEYUTIL.getKey(rsaPubStr);
   // let newPrv = jsrsa.KEYUTIL.getKey(rsaPrvStr);
   //
-  // console.log(newPub);
-  // console.log(newPrv);
+  // //console.log(newPub);
+  // //console.log(newPrv);
   //
   // let message = "sup dude";
   // console.log("Now signing...");
   // let sig = new jsrsa.crypto.Signature({"alg":"SHA1withRSA"});
   // sig.init(newPrv);
   // sig.updateString(message);
-  // let signature = sig.sign();
+  // let signature = sig.sign().toString("hex");
   // console.log(signature);
+  //
+  // let tempData = {
+  //   "signature":signature
+  // };
+  //
+  // tempData = JSON.stringify(tempData);
+  //
+  // tempData = JSON.parse(tempData);
+  //
+  // signature = tempData["signature"];
   //
   // let sig2 = new jsrsa.crypto.Signature({"alg":"SHA1withRSA"});
   // sig2.init(newPub);

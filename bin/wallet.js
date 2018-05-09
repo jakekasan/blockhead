@@ -7,11 +7,8 @@ module.exports = class Wallet {
     this.blockchain = blockchain;
     this.balance = this.getBalance();
     this.name = name;
-    this.publicKey = publicKey;
-    this.privateKey = privateKey
-    // let keyObj = jsrsa.KEYUTIL.generateKeypair("RSA",1024);
-    // this.publicKey = keyObj.pubKeyObj;
-    // this.privateKey = keyObj.prvKeyObj;
+    this.publicKey = (typeof privateKey === "string" | privateKey instanceof String) ? publicKey : jsrsa.KEYUTIL.getPEM(publicKey);
+    this.privateKey = (typeof privateKey === "string" | privateKey instanceof String) ? privateKey : jsrsa.KEYUTIL.getPEM(privateKey,"PKCS8PRV");
   }
 
   sendMoney(amount,recipient){
@@ -43,11 +40,11 @@ module.exports = class Wallet {
   }
 
   getInputs(blockchain){
-    //console.log("Getting inputs for " + this.name);
     let potentialInputs = [];
     for (var i = 0; i < blockchain.blocks.length; i++) {
-      for (var j = 0; j < blockchain.blocks[i].data.length; j++) {
-        let input = blockchain.blocks[i].data[j];
+      let blockData = blockchain.blocks[i].getData();
+      for (var j = 0; j < blockData.length; j++) {
+        let input = (blockData[j]);
         if (input.data.to == this.name) {
           let block = blockchain.blocks[i].hash;
           let transaction = input.id;

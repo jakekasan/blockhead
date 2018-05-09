@@ -13,28 +13,37 @@ module.exports = class BlockChain {
   constructor(difficulty,pwd="boobs",firstRecipients) {
     this.blocks = [];
     this.difficulty = difficulty;
-    //this.blocks.push(genesisBlock);
     this.pending = [];
     let keyObj = jsrsa.KEYUTIL.generateKeypair("RSA",1024);
     this.publicKey = keyObj.pubKeyObj;
     this.privateKey = keyObj.prvKeyObj;
     this.masterHash = cjs.SHA256(pwd);
 
+    keyObj = jsrsa.KEYUTIL.generateKeypair("RSA",1024);
+    let genesisPub = keyObj.pubKeyObj;
+    let genesisPrv = keyObj.prvKeyObj;
+
     // make God's wallet...
     //console.log("Making God Wallet...");
     let masterWallet = new Wallet("God",this,this.privateKey,this.publicKey);
+    let genesisWallet = new Wallet("God",this,genesisPrv,genesisPub);
     //console.log("Wallet made...");
     this.db = new DB();
-    console.log("Adding to database...");
+    //console.log("Adding to database...");
     this.db.addData(masterWallet,pwd);
-    console.log("Data added to database");
+    this.db.addData(genesisWallet,pwd);
+    //console.log("Data added to database");
 
 
     // genesisBlock - give a few million to admin
-    let bigBang = new Transaction(undefined,this.publicKey,1000000000,[],this.privateKey);
+    let bigBang = new Transaction(genesisPub,this.publicKey,1000000000,[],genesisPrv);
+    console.log("Validating signature manually...");
+    console.log(bigBang.signature);
+    console.log(this.validateSignature(bigBang.signature,bigBang.sender,bigBang.getDataString()));
+    //console.log("Transaction created...");
     this.blocks.push(new Block([bigBang],this.difficulty));
-    console.log("GENESIS BLOCK PUSHED!");
-    for (var i = 0; i < 20; i++) {
+    //console.log("GENESIS BLOCK PUSHED!");
+    for (var i = 0; i < 1; i++) {
       let firstName = potential_names[Math.floor(Math.random()*potential_names.length)];
       let LastName = potential_surnames[Math.floor(Math.random()*potential_surnames.length)];
       let name = firstName + " " + LastName;
@@ -52,16 +61,18 @@ module.exports = class BlockChain {
 
 
   submitTransaction(transaction){
-    if (!this.validateSignature(transaction.signature,transaction.sender,transaction.getDataString())) {
-      console.log("Transaction Rejected, Invalid Signature : " + transaction.getDataString());
+    if (!this.validateTransaction(transaction)) {
+      console.log("Transaction Rejected, Invalid Signature : ");
+      console.log(transaction.getTransactionString());
       return false;
     }
     if (!this.checkInputs(transaction.inputs,transaction.sender,transaction.amount)) {
-      console.log("Transaction Rejected, Invalid Inputs : " + transaction.getDataString());
+      console.log("Transaction Rejected, Invalid Inputs : ");
+      console.log(transaction.getTransactionString());
       return false;
     }
     console.log("Transaction Accepted : " + transaction.signature);
-    this.pending.push(transaction.getData());
+    this.pending.push(transaction.getTransactionString());
     return true;
   }
 
@@ -84,17 +95,29 @@ module.exports = class BlockChain {
 
   validateSignature(signature,sender,data){
     let sig = new jsrsa.crypto.Signature({'alg': 'SHA1withRSA'});
+    sender = jsrsa.KEYUTIL.getKey(sender);
     sig.init(sender);
     sig.updateString(data);
     return sig.verify(signature);
   }
 
+  validateTransaction(transaction){
+    let sig = new jsrsa.crypto.Signature({'alg':'SHA1withRSA'});
+    let key = jsrsa.KEYUTIL.getKey(transaction.sender)
+    let data = transaction.getDataString();
+    sig.init(key);
+    sig.updateString(data);
+    return sig.verify(transaction.signature);
+  }
+
   getInputs(name,balance){
+    name = (typeof name === "string") ? name : jsrsa.KEYUTIL.getPEM(name);
     let potentialInputs = [];
     let tempBalance = 0;
     for (var i = this.blocks.length-1; i >= 0 ; i--) {
-      for (var j = 0; j < this.blocks[i].data.length; j++) {
-        let input = this.blocks[i].data[j];
+      let blockData = JSON.parse(this.blocks[i].data);
+      for (var j = 0; j < blockData.length; j++) {
+        let input = blockData[j];
         if (input.data.to == name) {
           potentialInputs.push({
             "block":this.blocks[i].hash,

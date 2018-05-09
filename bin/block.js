@@ -2,7 +2,7 @@ const cjs = require("crypto-js");
 
 module.exports = class Block {
   constructor(data,difficulty,prevHash = undefined) {
-    this.data = data; // json of transaction
+    this.data = (typeof data === "string") ? data : JSON.stringify(data); // json of transaction
     this.prevHash = (prevHash) ? prevHash : "";
     this.difficulty = difficulty;
     this.nonce = 0;
@@ -10,7 +10,7 @@ module.exports = class Block {
   }
 
   getHash(){
-    return cjs.SHA256(this.prevHash + this.data + this.nonce);
+    return cjs.SHA256(this.prevHash + this.data + this.nonce.toString());
   }
 
   mineBlock() {
@@ -24,11 +24,15 @@ module.exports = class Block {
 
   print(){
     let data = {
-      "Data":this.data,
+      "Data":this.getData(),
       "Hash":this.hash,
       "Nonce":this.nonce,
       "Previous Hash": this.prevHash
     }
     console.log(JSON.stringify(data,null,2));
+  }
+
+  getData(){
+    return JSON.parse(this.data);
   }
 }
