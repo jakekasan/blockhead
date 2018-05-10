@@ -8,9 +8,7 @@ module.exports = class Database {
   }
 
   addData(wallet,password) {
-    console.log("Adding to db...");
     let row = new UserData(wallet.name,cjs.SHA256(password),wallet.privateKey,wallet.publicKey);
-    console.log("Added to db.");
     this.rows.push(row);
   }
 

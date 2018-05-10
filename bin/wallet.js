@@ -44,7 +44,8 @@ module.exports = class Wallet {
     for (var i = 0; i < blockchain.blocks.length; i++) {
       let blockData = blockchain.blocks[i].getData();
       for (var j = 0; j < blockData.length; j++) {
-        let input = (blockData[j]);
+        let input = blockData[j];
+
         if (input.data.to == this.name) {
           let block = blockchain.blocks[i].hash;
           let transaction = input.id;
@@ -59,7 +60,7 @@ module.exports = class Wallet {
   }
 
   getBalance(){
-    let inputs = this.getInputs(this.blockchain,1000000000);
+    let inputs = this.blockchain.getInputs(this.publicKey,1000000000);
     return inputs.map((element) => { element.amount }).reduce((acc,element) => { acc + element } ,0);
   }
 

@@ -11,7 +11,8 @@ module.exports = class Transaction {
       "from": this.sender,
       "to": this.recipient,
       "amount": this.amount,
-      "inputs": this.inputs
+      "inputs": this.inputs,
+      "outputs":
     };
     this.id = cjs.SHA256(JSON.stringify(this.data)).toString(cjs.enc.Hex);
     prvKey = (typeof prvKey === 'string' || prvKey instanceof String) ? prvKey : jsrsa.KEYUTIL.getPEM(prvKey,"PKCS8PRV");
@@ -30,15 +31,15 @@ module.exports = class Transaction {
     return JSON.stringify(transaction,null,2);
   }
 
+  getTransactionID(){
+    return this.id;
+  }
+
   signTransaction(prvKey){
     let sig = new jsrsa.crypto.Signature({'alg': 'SHA1withRSA'});
     sig.init(jsrsa.KEYUTIL.getKey(prvKey));
     sig.updateString(this.getDataString());
-    console.log("TRANSACTION - signatureS: ");
     let signature = sig.sign();
-    console.log(signature);
-    console.log("TRANSACTION - data:");
-    console.log(this.getDataString());
     return signature.toString();
   }
 

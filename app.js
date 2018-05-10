@@ -22,6 +22,7 @@ app.listen(8080, () => {
 
   let bc = new BlockChain(1);
   bc.print();
+  console.log(bc.blocks.length);
 
   //
   // var rsaKeypair = jsrsa.KEYUTIL.generateKeypair("RSA", 1024);
