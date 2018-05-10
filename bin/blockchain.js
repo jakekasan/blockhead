@@ -2,6 +2,7 @@ const Block = require("./block.js");
 const Transaction = require('./transaction');
 const Wallet = require('./wallet.js');
 const UserData = require('./../models/userDataModel.js');
+const Output = require('./output.js');
 const DB = require('./../models/database.js');
 const jsrsa = require('jsrsasign');
 const cjs = require('crypto-js');
@@ -23,28 +24,25 @@ module.exports = class BlockChain {
     let genesisPub = keyObj.pubKeyObj;
     let genesisPrv = keyObj.prvKeyObj;
 
-    // make God's wallet...
-    console.log("Making God Wallet...");
-    let masterWallet = new Wallet("God",this,this.privateKey,this.publicKey);
-    let genesisWallet = new Wallet("God",this,genesisPrv,genesisPub);
-    console.log("Wallet made...");
+
+    let masterWallet = new Wallet("God1",this,this.privateKey,this.publicKey);
+    let genesisWallet = new Wallet("God2",this,genesisPrv,genesisPub);
+
     this.db = new DB();
-    //console.log("Adding to database...");
+
     this.db.addData(masterWallet,pwd);
     this.db.addData(genesisWallet,pwd);
-    //console.log("Data added to database");
 
 
-    // genesisBlock - give a few million to admin
+
+
     console.log("New Transaction");
-    let bigBang = new Transaction(genesisPub,this.publicKey,1000000000,[],genesisPrv);
-    //console.log("Validating signature manually...");
-    //console.log(bigBang.signature);
-    //console.log(this.validateSignature(bigBang.signature,bigBang.sender,bigBang.getDataString()));
-    //console.log("Transaction created...");
-    this.blocks.push(new Block([bigBang],this.difficulty));
+    let bigBang = new Transaction([],[new Output(this.publicKey,100000000000)],genesisPrv,this);
+    this.blocks.push(new Block([bigBang.getTransactionString()],this.difficulty));
+
     console.log("GENESIS BLOCK PUSHED!");
-    for (var i = 0; i < 1; i++) {
+
+    for (var i = 0; i < 20; i++) {
       let firstName = potential_names[Math.floor(Math.random()*potential_names.length)];
       let LastName = potential_surnames[Math.floor(Math.random()*potential_surnames.length)];
       let name = firstName + " " + LastName;
@@ -52,8 +50,25 @@ module.exports = class BlockChain {
       console.log("BLOCKCHAIN - making new wallet for " + name);
       let wallet = new Wallet(name,this,keyObj.prvKeyObj,keyObj.pubKeyObj);
       this.db.addData(wallet,LastName);
-      let value = 10*Math.random();
-      if (!this.submitTransaction(new Transaction(this.publicKey,wallet.publicKey,value,this.getInputs(this.publicKey,value),this.privateKey))){
+      let value = Math.floor(1000000*Math.random());
+
+      if (!masterWallet.sendMoney(value,wallet.publicKey)){
+        console.log("Transaction failed");
+      };
+      console.log("Transaction succeeded");
+      this.update();
+    }
+
+
+    for (let i = 0; i < 2000; i++) {
+      let walletA = this.db.getRandomWallet(this);
+      let walletB = this.db.getRandomWallet(this);
+      let amount = Math.floor(Math.random()*100);
+
+      console.log("Attempting transaction");
+      if (walletA.sendMoney(amount,walletB.publicKey)){
+        console.log("Transaction succeeded");
+      } else {
         console.log("Transaction failed");
       };
       this.update();
@@ -96,6 +111,7 @@ module.exports = class BlockChain {
   }
 
   validateSignature(signature,sender,data){
+    console.log("validating signature...");
     let sig = new jsrsa.crypto.Signature({'alg': 'SHA1withRSA'});
     sender = jsrsa.KEYUTIL.getKey(sender);
     sig.init(sender);
@@ -104,10 +120,11 @@ module.exports = class BlockChain {
   }
 
   validateTransaction(transaction){
-    console.log("validating transaction..");
+    console.log("validating transaction...");
+    //console.log(transaction);
     let sig = new jsrsa.crypto.Signature({'alg':'SHA1withRSA'});
-    let key = jsrsa.KEYUTIL.getKey(transaction.sender)
-    let data = transaction.getDataString();
+    let key = jsrsa.KEYUTIL.getKey(transaction.getSender())
+    let data = transaction.getTransactionDataString();
     sig.init(key);
     sig.updateString(data);
     return sig.verify(transaction.signature);
@@ -142,79 +159,124 @@ module.exports = class BlockChain {
     return potentialInputs;
   }
 
-  getBalance(publicKey,upTo){
-    let inputs = [];
-    if (!upTo) {
-      upTo = 10000000000;
-    }
-    for (let i = 0; i < this.blocks.length; i++) {
-      let blockData = this.blocks[i].data;
-      for (let j = 0; j < blockData.length; j++) {
-        let transaction = blockData[j];
-        if (transaction.sender == publicKey) {
-          inputs.push({
-            "amount": -transaction.amount
-          });
-        }
-        if (transaction.recipient == publicKey) {
-          inputs.push({
-            "amount": transaction.amount
-          });
-        }
-      }
-    }
-    return inputs;
-  }
-
-  getInputs(publicKey,upTo){
-    let inputs = [];
-    if (!upTo) {
-      upTo = 10000000000;
-    }
-    for (let i = 0; i < this.blocks.length; i++) {
-      let blockData = this.blocks[i].data;
-      for (let j = 0; j < blockData.length; j++) {
-        let transaction = blockData[j];
-        if (transaction.sender == publicKey) {
-          inputs.push({
-            "amount": -transaction.amount
-          });
-        }
-        if (transaction.recipient == publicKey) {
-          inputs.push({
-            "amount": transaction.amount
-          });
-        }
-        if (upTo <= 0){
-          return inputs;
-        }
-      }
-    }
-    return inputs;
-  }
-
   checkInputs(transaction){
-    console.log("Checking transaction");
-    let transactionInputs = transaction.inputs;//this.getInputsFromTransaction(transaction);
-    if (!transactionInputs) {
-      return false;
-    }
-    console.log("Got inputs from transaction");
-    //transactionInputs = JSON.parse(transactionInputs);
-    let blockInputs = this.getInputs(transaction.sender,transaction.amounts);
-    if (!blockInputs){
-      return false;
-    };
-
-    return !(transactionInputs.map((element) => {blockInputs.includes(element)}).includes(false));
+    return !transaction.inputs.map((txo) => { this.isOutputSpent(txo) }).includes(true);
   }
 
-  getByName(name){
-    for (var i = 0; i < this.blocks.length; i++) {
-      for (var j = 0; j < this.blocks[i].data.length; j++) {
-        this.blocks.data[i];
+  isOutputSpent(output){
+    // Does it even exist?
+    if (this.blocks.length < 2) {
+      return false;
+    }
+    var exists = false;
+    for (var i = this.blocks.length - 1; i >= 0; i--) {
+      let block = this.blocks[i].getObject();
+      for (let j = 0; j < block.data.length; j++) {
+        let transaction = JSON.parse(block.data[j]);
+        for (let k = 0; k < transaction.inputs.length; k++){
+          if (transaction.inputs[k] == output) {
+            // output has been used
+            return true;
+          }
+        }
+        for (let k = 0; k < transaction.outputs.length; k++){
+          if (transaction.outputs[k] == output) {
+            // found the output
+            exists = true;
+          }
+        }
+      }
+      if (exists) {
+        return false;
       }
     }
+  }
+
+  getOutputs(publicKey,amount){
+    //console.log("Getting outputs");
+    let outputs = [];
+    let balance = 0;
+    //console.log("Logging block length:",this.blocks.length);
+
+    // first check pending
+    //console.log("PENDING POOL LENGTH:",this.pending.length);
+
+    for (let j = 0; j < this.pending.length; j++) {
+      let transaction = JSON.parse(this.pending[j]);
+      outputs = outputs.filter((txo) => { !transaction.inputs.includes(txo) });
+      balance = 0;
+      balance = outputs.map((txo) => { txo.value }).reduce((acc,el) => (el + acc),balance);
+      for (let k = 0; k < transaction.outputs.length; k++){
+        let oldOutput = transaction.outputs[k];
+        if (oldOutput.owner == publicKey) {
+          //console.log("Creating new output with name:",oldOutput.owner," \tvalue:",oldOutput.value);
+          let newOutput = new Output(oldOutput.owner,oldOutput.value);
+          balance += oldOutput.value;
+          newOutput.setHashes("current",transaction.hash);
+          outputs.push(newOutput);
+        }
+      }
+      if (balance >= amount) {
+        return outputs;
+      }
+    }
+
+
+    // now check written blocks
+    for (let i = this.blocks.length-1; i >= 0; i--) {
+      let block = this.blocks[i].getObject();
+
+      //console.log(block);
+      //block.data = JSON.parse(block.data);
+      for (let j = 0; j < block.data.length; j++) {
+        let transaction = JSON.parse(block.data[j]);
+        outputs = outputs.filter((txo) => { !transaction.inputs.includes(txo) });
+        balance = 0;
+        balance = outputs.map((txo) => { txo.value }).reduce((acc,el) => (el + acc),balance);
+        for (let k = 0; k < transaction.outputs.length; k++){
+          let oldOutput = transaction.outputs[k];
+          if (oldOutput.owner == publicKey) {
+            //console.log("Creating new output with name:",oldOutput.owner," \tvalue:",oldOutput.value);
+            let newOutput = new Output(oldOutput.owner,oldOutput.value);
+            balance += oldOutput.value;
+            newOutput.setHashes(block.hash,transaction.hash);
+            outputs.push(newOutput);
+          }
+        }
+        if (balance >= amount) {
+          return outputs;
+        }
+      }
+    }
+    return false;
+  }
+
+  getBalance(publicKey){
+    let outputs = [];
+    if (this.blocks.length < 2) {
+      return 0;
+    }
+    for (var i = 0; i < this.blocks.length; i++) {
+      let block = this.blocks[i].getObject();
+      for (let j = 0; j < block.data.length; j++) {
+        let transaction = JSON.parse(block.data[j]);
+        //console.log("\n\nPOINT OF FAILURE");
+        //console.log(transaction.outputs);
+        outputs = outputs.filter((txo) => {!transaction.inputs.includes(txo)});
+        for (let k = 0; k < transaction.outputs.length; k++) {
+          let output = transaction.outputs[k];
+          if (output.owner == publicKey) {
+            let newOutput = new Output(output.owner,output.value);
+            newOutput.setHashes(block.hash,transaction.hash);
+            outputs.push(newOutput.getInput());
+          }
+        }
+      }
+    }
+    if (outputs.length < 1) {
+      return 0;
+    }
+    return outputs.reduce((acc,cur) => acc + cur.value );
   }
 
   update(){

@@ -1,6 +1,7 @@
 const cjs = require('crypto-js');
 const jsrsa = require('jsrsasign');
 const UserData = require('./userDataModel.js');
+const Wallet = require('./../bin/wallet.js');
 
 module.exports = class Database {
   constructor() {
@@ -19,6 +20,18 @@ module.exports = class Database {
       }
     }
     return undefined;
+  }
+
+  getWallet(rowNum,blockchain){
+    //console.log("Getting new wallet");
+    let wallet = new Wallet(this.rows[rowNum].name,blockchain,this.rows[rowNum].privateKey,this.rows[rowNum].publicKey);
+    //console.log("Got new wallet, now returning");
+    return wallet;
+  }
+
+  getRandomWallet(blockchain){
+    let rand = Math.floor(Math.random()*this.rows.length);
+    return this.getWallet(rand,blockchain);
   }
 
   print(){

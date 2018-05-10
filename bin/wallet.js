@@ -1,6 +1,7 @@
 const jsrsa = require("jsrsasign");
 const cjs = require('crypto-js');
-const Transaction = require('./transaction.js')
+const Transaction = require('./transaction.js');
+const Output = require('./output.js');
 
 module.exports = class Wallet {
   constructor(name,blockchain,privateKey,publicKey) {
@@ -12,38 +13,33 @@ module.exports = class Wallet {
   }
 
   sendMoney(amount,recipient){
-    if (recipient == this.publicKey | recipient == undefined) {
+    // get recipient's publicKey and valid outputs
+
+    let inputs = this.blockchain.getOutputs(this.publicKey,amount);
+    if (inputs.length < 1 | inputs == false) {
       return false;
     }
-    if (amount < this.balance) {
-      return false;
-    }
-    let transaction = new Transaction(this.publicKey,recipient,amount,this.blockchain.getInputs(this.name),this.privateKey);
+    let inputValue = inputs.map((x)=>{return x.value}).reduce((acc,cur) => cur + acc );
+    let leftover = inputValue - amount;
+    console.log("inputValue:",inputValue,"  leftover = ",leftover);
+    let outputs = [
+      (new Output(recipient,amount)).getInput(),
+      (new Output(this.publicKey,leftover)).getOutput()
+    ];
+
+    console.log("Submitting transaction");
+    let transaction = new Transaction(inputs,outputs,this.privateKey,this.blockchain);
     if (!this.blockchain.submitTransaction(transaction)){
       return false;
     }
     return true;
   }
 
-  signTransaction(amount,recipient){
-    let sig = jsrsa.crypto.Signature({"alg":"SHA1withRSA"});
-
-    let signature = this.name + " sends " + amount.toString() + " to " + recipient;
-    return signature;
-  }
-
-  verifySignature(publicKey,message,signature){
-    //let sig = jsrsa.crypto.Signature({"alg":"SHA1withRSA"});
-    //sig.init(publicKey);
-    //sig.update(message);
-    //return sig.verify(signature);
-  }
-
   getInputs(blockchain){
     let potentialInputs = [];
-    for (var i = 0; i < blockchain.blocks.length; i++) {
-      let blockData = blockchain.blocks[i].getData();
-      for (var j = 0; j < blockData.length; j++) {
+    for (var i = blockchain.blocks.length - 1; i >= 0; i--) {
+      let outputs = blockchain.blocks[i].getData();
+      for (var j = 0; j < outputs.length; j++) {
         let input = blockData[j];
 
         if (input.data.to == this.name) {
@@ -60,8 +56,9 @@ module.exports = class Wallet {
   }
 
   getBalance(){
-    let inputs = this.blockchain.getInputs(this.publicKey,1000000000);
-    return inputs.map((element) => { element.amount }).reduce((acc,element) => { acc + element } ,0);
+    //let inputs = this.blockchain.getInputs(this.publicKey,1000000000);
+    return this.blockchain.getBalance(this.publicKey);
+    //return outputs.map((element) => { element.amount }).reduce((acc,element) => { acc + element } ,0);
   }
 
 }
