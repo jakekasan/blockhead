@@ -7,9 +7,6 @@ const DB = require('./../models/database.js');
 const jsrsa = require('jsrsasign');
 const cjs = require('crypto-js');
 
-var potential_names = ["Adam","Ben","Chandler","Daryl","Ephelia","Francine","George","Henrietta","Isobel","Janice","Dwight","Joey","Ross","Rachel","Pheobe","Pam"];
-var potential_surnames = ["Geller","Smith","Davis","Hannah","Carrola","Buffay","Halpert","Schrute","Bing","Tribiani","Greene","Bluth"];
-
 module.exports = class BlockChain {
   constructor(difficulty,pwd="boobs",firstRecipients) {
     this.blocks = [];
@@ -19,60 +16,9 @@ module.exports = class BlockChain {
     this.publicKey = keyObj.pubKeyObj;
     this.privateKey = keyObj.prvKeyObj;
     this.masterHash = cjs.SHA256(pwd);
-
-    keyObj = jsrsa.KEYUTIL.generateKeypair("RSA",1024);
-    let genesisPub = keyObj.pubKeyObj;
-    let genesisPrv = keyObj.prvKeyObj;
-
-
-    let masterWallet = new Wallet("God1",this,this.privateKey,this.publicKey);
-    let genesisWallet = new Wallet("God2",this,genesisPrv,genesisPub);
-
     this.db = new DB();
-
-    this.db.addData(masterWallet,pwd);
-    this.db.addData(genesisWallet,pwd);
-
-
-
-
-    console.log("New Transaction");
-    let bigBang = new Transaction([],[new Output(this.publicKey,100000000000)],genesisPrv,this);
-    this.blocks.push(new Block([bigBang.getTransactionString()],this.difficulty));
-
-    console.log("GENESIS BLOCK PUSHED!");
-
-    for (var i = 0; i < 20; i++) {
-      let firstName = potential_names[Math.floor(Math.random()*potential_names.length)];
-      let LastName = potential_surnames[Math.floor(Math.random()*potential_surnames.length)];
-      let name = firstName + " " + LastName;
-      let keyObj = jsrsa.KEYUTIL.generateKeypair("RSA",1024);
-      console.log("BLOCKCHAIN - making new wallet for " + name);
-      let wallet = new Wallet(name,this,keyObj.prvKeyObj,keyObj.pubKeyObj);
-      this.db.addData(wallet,LastName);
-      let value = Math.floor(1000000*Math.random());
-
-      if (!masterWallet.sendMoney(value,wallet.publicKey)){
-        console.log("Transaction failed");
-      };
-      console.log("Transaction succeeded");
-      this.update();
-    }
-
-
-    for (let i = 0; i < 2000; i++) {
-      let walletA = this.db.getRandomWallet(this);
-      let walletB = this.db.getRandomWallet(this);
-      let amount = Math.floor(Math.random()*100);
-
-      console.log("Attempting transaction");
-      if (walletA.sendMoney(amount,walletB.publicKey)){
-        console.log("Transaction succeeded");
-      } else {
-        console.log("Transaction failed");
-      };
-      this.update();
-    }
+    this.masterWallet = new Wallet("admin",this,this.privateKey,this.publicKey);
+    this.db.add(this.masterWallet);
   }
 
 
@@ -291,6 +237,18 @@ module.exports = class BlockChain {
     for (let i = 0; i < this.blocks.length; i++){
       this.blocks[i].print();
     }
+  }
+
+  getString(){
+    toPrint = [];
+    for (block of this.blocks) {
+      toPrint.push(block.getDataString());
+    }
+    return JSON.stringify(toPrint);
+  }
+
+  addToDatabase(wallet,password){
+    this.db.addData(wallet,password);
   }
 
 
