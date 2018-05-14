@@ -4,8 +4,9 @@ const UserData = require('./userDataModel.js');
 const Wallet = require('./../bin/wallet.js');
 
 module.exports = class Database {
-  constructor() {
+  constructor(bc) {
     this.rows = [];
+    this.blockchain = bc;
   }
 
   addData(wallet,password) {
@@ -22,16 +23,20 @@ module.exports = class Database {
     return undefined;
   }
 
-  getWallet(rowNum,blockchain){
+  getWallet(rowNum){
     //console.log("Getting new wallet");
-    let wallet = new Wallet(this.rows[rowNum].name,blockchain,this.rows[rowNum].privateKey,this.rows[rowNum].publicKey);
+    let wallet = new Wallet(this.rows[rowNum].name,this.blockchain,this.rows[rowNum].privateKey,this.rows[rowNum].publicKey);
     //console.log("Got new wallet, now returning");
     return wallet;
   }
 
-  getRandomWallet(blockchain){
+  getRandomWallet(){
     let rand = Math.floor(Math.random()*this.rows.length);
-    return this.getWallet(rand,blockchain);
+    return this.getWallet(rand);
+  }
+
+  getRandomPublicKey(){
+    return (this.getRandomWallet()).publicKey;
   }
 
   print(){

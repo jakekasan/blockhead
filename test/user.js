@@ -1,12 +1,36 @@
-class User {
+const Wallet = require('./../bin/wallet.js');
+const jsrsa = require('jsrsasign');
+
+module.exports = class User {
   constructor(name,pwd,bc) {
     this.name = name;
-    static names.push(name);
-    this.password = password;
+    //static names.push(name);
+    this.password = pwd;
     let keyObj = jsrsa.KEYUTIL.generateKeypair("RSA",1024);
     this.wallet = new Wallet(name,bc,keyObj.prvKeyObj,keyObj.pubKeyObj);
     this.bc = bc;
-    this.bc.addToDatabase(this.name,wallet);
+    this.bc.addToDatabase(this.wallet,pwd);
+  }
+
+  getPublicKey(){
+    return this.wallet.getPublicKey();
+  }
+
+  makePayment(){
+    //console.log("Making payment...");
+    var to;
+    do {
+      to = this.bc.getRandomPublicKey();
+    } while (to == this.wallet.publicKey);
+
+    console.log("My balance is",this.wallet.getBalance());
+
+    var amount = Math.floor(Math.random()*this.wallet.getBalance());
+    //console.log("\n");
+    //console.log(this.wallet.publicKey);
+    //console.log("sending",amount.toString(),"to",to);
+    //console.log("\n");
+    this.wallet.sendMoney(amount,to);
   }
 
 

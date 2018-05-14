@@ -13,12 +13,14 @@ const Wallet = require('./bin/wallet.js');
 const bigInt = require('big-integer');
 const forge = require('forge')
 const bodyParser = require('body-parser');
+const Simulator = require('./test/simulator.js');
+
 
 const router = require('./controllers/router.js');
 
 
 const bc = new BlockChain(1);
-
+const simulator = new Simulator(bc,10,10);
 var app = express();
 
 app.use(bodyParser.json());
@@ -26,11 +28,7 @@ app.use(bodyParser.json());
 router(app,bc);
 
 app.listen(8080, () => {
-  //
-  // let bc = new BlockChain(1);
-  // bc.print();
-  // console.log(bc.blocks.length);
-  console.log("Listening on port 8080");
-  console.log(_myConstant);
+
+  simulator.runSimulator();
 
 });

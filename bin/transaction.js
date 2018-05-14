@@ -8,6 +8,7 @@ module.exports = class Transaction {
     this.hash = this.getHash();
     this.signature = this.signTransaction(prvKey);
     this.blockchain = blockchain;
+    this.sender = undefined;
   }
 
   getTransactionString(){
@@ -33,11 +34,15 @@ module.exports = class Transaction {
   }
 
   getSender(){
-    return this.inputs[0].owner;
+    return (this.sender == undefined) ? this.inputs[0].owner : this.sender;
   }
 
   getHash(){
     return cjs.SHA256(this.getTransactionDataString()).toString();
+  }
+
+  setSender(publicKey){
+    this.sender = publicKey;
   }
 
   signTransaction(prvKey){

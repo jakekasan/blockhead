@@ -15,6 +15,10 @@ module.exports = class Wallet {
   sendMoney(amount,recipient){
     // get recipient's publicKey and valid outputs
 
+    if (recipient == this.publicKey) {
+      return false;
+    }
+
     let inputs = this.blockchain.getOutputs(this.publicKey,amount);
     if (inputs.length < 1 | inputs == false) {
       return false;
@@ -56,9 +60,11 @@ module.exports = class Wallet {
   }
 
   getBalance(){
-    //let inputs = this.blockchain.getInputs(this.publicKey,1000000000);
     return this.blockchain.getBalance(this.publicKey);
-    //return outputs.map((element) => { element.amount }).reduce((acc,element) => { acc + element } ,0);
+  }
+
+  getPublicKey(){
+    return this.publicKey;
   }
 
 }

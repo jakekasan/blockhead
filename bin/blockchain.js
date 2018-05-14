@@ -16,9 +16,17 @@ module.exports = class BlockChain {
     this.publicKey = keyObj.pubKeyObj;
     this.privateKey = keyObj.prvKeyObj;
     this.masterHash = cjs.SHA256(pwd);
-    this.db = new DB();
+    this.db = new DB(this);
     this.masterWallet = new Wallet("admin",this,this.privateKey,this.publicKey);
-    this.db.add(this.masterWallet);
+    this.addToDatabase(this.masterWallet,pwd);
+
+    // genesis block, give master loads of money
+    // genesis transactions
+    let genesisOutput = new Output(this.masterWallet.publicKey,100000000);
+
+    let genesisTransaction = new Transaction([],[genesisOutput.getOutput()],this.privateKey,this);
+    this.blocks.push(new Block([genesisTransaction.getTransactionString()],this.difficulty));
+    console.log("Blockchain created, current length:",this.blocks.length);
   }
 
 
@@ -198,11 +206,14 @@ module.exports = class BlockChain {
   }
 
   getBalance(publicKey){
+    //console.log("Getting balance");
     let outputs = [];
-    if (this.blocks.length < 2) {
+    if (this.blocks.length < 1) {
+      //console.log("Blocks are too short");
       return 0;
     }
     for (var i = 0; i < this.blocks.length; i++) {
+      //console.log(this.blocks[i].print());
       let block = this.blocks[i].getObject();
       for (let j = 0; j < block.data.length; j++) {
         let transaction = JSON.parse(block.data[j]);
@@ -222,14 +233,19 @@ module.exports = class BlockChain {
     if (outputs.length < 1) {
       return 0;
     }
-    return outputs.reduce((acc,cur) => acc + cur.value );
+    console.log("Outputs of wallet");
+    console.log(outputs[0].value);
+    let balance = outputs.reduce((acc,cur) => acc + cur.value , 0);
+    return balance;
   }
 
   update(){
-    if (this.pending.length >= 4) {
+    if (this.pending.length >= 1) {
       console.log("Emptying pending transactions");
-      this.addBlock(this.pending);
-      this.pending = [];
+      let transaction = this.pending.pop();
+      console.log(transaction);
+      this.addBlock([transaction]);
+      //this.pending = [];
     }
   }
 
@@ -249,6 +265,29 @@ module.exports = class BlockChain {
 
   addToDatabase(wallet,password){
     this.db.addData(wallet,password);
+  }
+
+  getRandomPublicKey(){
+    return this.db.getRandomPublicKey();
+  }
+
+  //debugging
+
+  findWallets(){
+    let wallets = [];
+    for (let block of this.blocks) {
+      for (let transaction of block.getObject().data) {
+        transaction = JSON.parse(transaction);
+        for (let output of transaction.outputs) {
+          if (!wallets.includes(output.owner)) {
+            wallets.push(output.owner);
+          }
+        }
+      }
+    }
+    for (let wallet of wallets) {
+      console.log(wallet,"Balance:",this.getBalance(wallet));
+    }
   }
 
 
