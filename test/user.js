@@ -25,12 +25,12 @@ module.exports = class User {
 
     console.log("My balance is",this.wallet.getBalance());
 
-    var amount = Math.floor(Math.random()*this.wallet.getBalance());
+    var amount = Math.floor(Math.random()*100);
     //console.log("\n");
     //console.log(this.wallet.publicKey);
     //console.log("sending",amount.toString(),"to",to);
     //console.log("\n");
-    this.wallet.sendMoney(amount,to);
+    console.log(this.wallet.sendMoney(amount,to));
   }
 
 

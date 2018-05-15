@@ -20,7 +20,7 @@ const router = require('./controllers/router.js');
 
 
 const bc = new BlockChain(1);
-const simulator = new Simulator(bc,10,10);
+const simulator = new Simulator(bc,10,5);
 var app = express();
 
 app.use(bodyParser.json());

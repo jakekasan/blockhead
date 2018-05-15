@@ -23,13 +23,15 @@ module.exports = class Wallet {
     if (inputs.length < 1 | inputs == false) {
       return false;
     }
-    let inputValue = inputs.map((x)=>{return x.value}).reduce((acc,cur) => cur + acc );
+    let inputValue = inputs.map((x)=>{return x.value}).reduce((acc,cur) => cur + acc,0);
     let leftover = inputValue - amount;
     console.log("inputValue:",inputValue,"  leftover = ",leftover);
     let outputs = [
-      (new Output(recipient,amount)).getInput(),
+      (new Output(recipient,amount)).getOutput(),
       (new Output(this.publicKey,leftover)).getOutput()
     ];
+
+
 
     console.log("Submitting transaction");
     let transaction = new Transaction(inputs,outputs,this.privateKey,this.blockchain);

@@ -2,7 +2,7 @@ const cjs = require("crypto-js");
 
 module.exports = class Block {
   constructor(data,difficulty,prevHash = undefined) {
-    this.data = (typeof data === "string") ? data : JSON.stringify(data,null,2); // json of transaction
+    this.data = (typeof data === "string") ? data : JSON.stringify(data); // json of transaction
     this.prevHash = (prevHash) ? prevHash : "";
     this.difficulty = difficulty;
     this.nonce = 0;
@@ -47,6 +47,11 @@ module.exports = class Block {
   }
 
   getData(){
-    return JSON.parse(this.data);
+    //console.log("BLOCK - parsing JSON data");
+    let data = [];
+    for (let transaction of JSON.parse(this.data)) {
+      data.push(JSON.parse(transaction));
+    }
+    return data;
   }
 }
