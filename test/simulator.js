@@ -32,7 +32,7 @@ module.exports = class Simulator {
       console.log("Tx succeeded?",this.blockchain.masterWallet.sendMoney(100000,user.getPublicKey()));
       this.blockchain.update();
     }
-    this.blockchain.findWallets();
+    //this.blockchain.findWallets();
   }
 
   runSimulator(){
@@ -45,7 +45,7 @@ module.exports = class Simulator {
     // }
 
     this.blockchain.print();
-    //this.blockchain.findWallets();
+    this.blockchain.findWallets();
   }
 
   getRandomUser(){

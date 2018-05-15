@@ -183,34 +183,13 @@ module.exports = class BlockChain {
           let newOutput = new Output(output.owner,output.value);
           balance += output.value;
           newOutput.setHashes("",transaction.hash);
-          outputs.push(newOutput);
+          outputs.push(newOutput.getInput());
         }
         if (balance >= amount) {
           return outputs;
         }
       }
     }
-    //
-    // for (let j = 0; j < this.pending.length; j++) {
-    //   let transaction = JSON.parse(this.pending[j]);
-    //   outputs = outputs.filter((txo) => { !transaction.inputs.includes(txo) });
-    //   balance = 0;
-    //   balance = outputs.map((txo) => { txo.value }).reduce((acc,el) => (el + acc),balance);
-    //   for (let k = 0; k < transaction.outputs.length; k++){
-    //     let oldOutput = transaction.outputs[k];
-    //     if (oldOutput.owner == publicKey) {
-    //       //console.log("Creating new output with name:",oldOutput.owner," \tvalue:",oldOutput.value);
-    //       let newOutput = new Output(oldOutput.owner,oldOutput.value);
-    //       balance += oldOutput.value;
-    //       newOutput.setHashes("current",transaction.hash);
-    //       outputs.push(newOutput);
-    //     }
-    //   }
-    //   if (balance >= amount) {
-    //     return outputs;
-    //   }
-    // }
-
 
     // now check written blocks
 
@@ -225,7 +204,7 @@ module.exports = class BlockChain {
             let newOutput = new Output(output.owner,output.value);
             balance += output.value;
             newOutput.setHashes("",transaction.hash);
-            outputs.push(newOutput);
+            outputs.push(newOutput.getInput());
           }
           if (balance >= amount) {
             return outputs;
@@ -233,7 +212,7 @@ module.exports = class BlockChain {
         }
       }
     }
-    
+
     return false;
   }
 
@@ -249,26 +228,38 @@ module.exports = class BlockChain {
       //console.log(block.getData()[0].outputs);
       for (let transaction of block.getData().slice().reverse()) {
         //console.log("getBalance - checking if current outputs match any tX inputs");
-        outputs = outputs.filter(txo => {!transaction.inputs.includes(txo)});
+        console.log("Outputs length before filter:",outputs.length);
+        console.log(typeof outputs[0]);
+        console.log(outputs);
+        console.log(transaction.inputs);
+        outputs = outputs.filter(txo => {
+          console.log(transaction.inputs.includes(txo));
+          return true;
+        });
+        console.log("Outputs length after filter:",outputs.length);
         //console.log(transaction.outputs);
         for (let output of transaction.outputs) {
           //console.log("getBalance - checking output");
-          //console.log("getBalance - the key we are searching for:",publicKey);
-          //console.log("getBalance - the key of the txo:",output.owner);
+          //console.log(JSON.stringify(output,null,2));
+          console.log("getBalance - the key we are searching for:",publicKey);
+          console.log("getBalance - the key of the txo:",output.owner);
+          console.log(output.owner == publicKey);
           if (output.owner == publicKey) {
-            //console.log("getBalance - found a relevant output! Value:",output.value);
-            outputs.push(output);
+            console.log("getBalance - found a relevant output! Value:",output.value);
+            let newOutput = new Output(output.owner,output.value);
+            newOutput.setHashes(block.hash,transaction.hash);
+            outputs.push(newOutput.getInput());
           }
         }
       }
     }
 
     if (outputs.length < 1) {
-      console.log("No outputs found for",publicKey);
+      //console.log("No outputs found for",publicKey);
       return 0;
     }
-    console.log("Outputs:");
-    console.log(outputs);
+    //console.log("Outputs:");
+    //console.log(outputs);
     let balance = outputs.reduce((acc,cur) => acc + cur.value,0);
     console.log("Balance is:",balance);
     return balance;
