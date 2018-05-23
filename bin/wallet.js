@@ -31,8 +31,6 @@ module.exports = class Wallet {
       (new Output(this.publicKey,leftover)).getOutput()
     ];
 
-
-
     console.log("Submitting transaction");
     let transaction = new Transaction(inputs,outputs,this.privateKey,this.blockchain);
     if (!this.blockchain.submitTransaction(transaction)){
@@ -42,6 +40,7 @@ module.exports = class Wallet {
   }
 
   getInputs(blockchain){
+    console.log("\n\nPOOODLE!!!!!!\n\n");
     let potentialInputs = [];
     for (var i = blockchain.blocks.length - 1; i >= 0; i--) {
       let outputs = blockchain.blocks[i].getData();

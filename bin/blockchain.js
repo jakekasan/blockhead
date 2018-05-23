@@ -94,7 +94,7 @@ module.exports = class BlockChain {
       for (var j = 0; j < blockData.length; j++) {
         let input = (blockData[j]);
         if (input.data.to == name) {
-          console.log("Hash: " + this.blocks[i].hash + "\tInput: " + input.id);
+          //console.log("Hash: " + this.blocks[i].hash + "\tInput: " + input.id);
           potentialInputs.push({
             "block":JSON.parse(this.blocks[i]).hash,
             "transaction":input.id,
@@ -136,10 +136,23 @@ module.exports = class BlockChain {
           }
         }
       }
-      if (exists) {
-        return false;
+    }
+
+    for (let block of this.pending) {
+      for (let transaction of block.getData()) {
+        for (let input of transaction.inputs) {
+          if (input == givenOutput){
+            return true;
+          }
+        }
       }
     }
+    if (exists) {
+      return false;
+    } else {
+      return true;
+    }
+
     //
     // for (var i = this.blocks.length - 1; i >= 0; i--) {
     //   let block = this.blocks[i].getObject();
@@ -169,27 +182,27 @@ module.exports = class BlockChain {
     var outputs = [];
     var balance = 0;
 
-    // check through pending transactions
+    // check through pending transactions - NOT anymore... getting inputs from pending transactions is a bad idea...
 
-    for (let transaction of this.pending.slice().reverse()) {
-      transaction = JSON.parse(transaction);
-      outputs = outputs.filter((txo) => { !transaction.inputs.includes(txo) });
-      if (outputs.length > 0) {
-        balance = outputs.map((txo) => { txo.value }).reduce((acc,el) => (el + acc));
-      }
-      //console.log(transaction);
-      for (let output of transaction.outputs) {
-        if (output.owner == publicKey) {
-          let newOutput = new Output(output.owner,output.value);
-          balance += output.value;
-          newOutput.setHashes("",transaction.hash);
-          outputs.push(newOutput.getInput());
-        }
-        if (balance >= amount) {
-          return outputs;
-        }
-      }
-    }
+    // for (let transaction of this.pending.slice().reverse()) {
+    //   transaction = JSON.parse(transaction);
+    //   outputs = outputs.filter((txo) => { !transaction.inputs.includes(txo) });
+    //   if (outputs.length > 0) {
+    //     balance = outputs.map((txo) => { txo.value }).reduce((acc,el) => (el + acc));
+    //   }
+    //   //console.log(transaction);
+    //   for (let output of transaction.outputs) {
+    //     if (output.owner == publicKey) {
+    //       let newOutput = new Output(output.owner,output.value);
+    //       balance += output.value;
+    //       newOutput.setHashes("",transaction.hash);
+    //       outputs.push(newOutput.getInput());
+    //     }
+    //     if (balance >= amount) {
+    //       return outputs;
+    //     }
+    //   }
+    // }
 
     // now check written blocks
 
@@ -203,7 +216,7 @@ module.exports = class BlockChain {
           if (output.owner == publicKey) {
             let newOutput = new Output(output.owner,output.value);
             balance += output.value;
-            newOutput.setHashes("",transaction.hash);
+            newOutput.setHashes(block.hash,transaction.hash);
             outputs.push(newOutput.getInput());
           }
           if (balance >= amount) {
@@ -223,27 +236,16 @@ module.exports = class BlockChain {
       //console.log("Blocks are too short");
       return 0;
     }
-    for (let block of this.blocks.slice().reverse()) {
-      //console.log("getBalance - log outputs of first transaction");
-      //console.log(block.getData()[0].outputs);
-      for (let transaction of block.getData().slice().reverse()) {
-        //console.log("getBalance - checking if current outputs match any tX inputs");
-        console.log("Outputs length before filter:",outputs.length);
-        console.log(typeof outputs[0]);
-        console.log(outputs);
-        console.log(transaction.inputs);
+    for (let block of this.blocks) {
+
+      for (let transaction of block.getData()) {
+
         outputs = outputs.filter(txo => {
-          console.log(transaction.inputs.includes(txo));
-          return true;
+          return !transaction.inputs.map(input => { return ((input.owner == txo.owner) && (input.value == txo.value) && (input.blockHash == txo.blockHash) && (input.transHash == txo.transHash)) }).includes(true);
         });
-        console.log("Outputs length after filter:",outputs.length);
         //console.log(transaction.outputs);
         for (let output of transaction.outputs) {
-          //console.log("getBalance - checking output");
-          //console.log(JSON.stringify(output,null,2));
-          console.log("getBalance - the key we are searching for:",publicKey);
-          console.log("getBalance - the key of the txo:",output.owner);
-          console.log(output.owner == publicKey);
+
           if (output.owner == publicKey) {
             console.log("getBalance - found a relevant output! Value:",output.value);
             let newOutput = new Output(output.owner,output.value);
@@ -261,16 +263,16 @@ module.exports = class BlockChain {
     //console.log("Outputs:");
     //console.log(outputs);
     let balance = outputs.reduce((acc,cur) => acc + cur.value,0);
-    console.log("Balance is:",balance);
+    //console.log("Key: ",publicKey);
+    //console.log("Balance:",balance);
     return balance;
   }
 
   update(){
-    if (this.pending.length >= 4) {
+    if (this.pending.length > 0) {
       console.log("Emptying pending transactions");
-      let transactions = this.pending.splice(0,4);
-      //console.log(transaction);
-      this.addBlock(transactions);
+      let transactions = this.pending.pop()
+      this.addBlock([transactions]);
       //this.pending = [];
     }
   }

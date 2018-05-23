@@ -14,13 +14,8 @@ module.exports = class Simulator {
     for (var i = 0; i < numberOfUsers; i++) {
       let name = potential_names[Math.floor(Math.random()*potential_names.length)] + " " + potential_surnames[Math.floor(Math.random()*potential_surnames.length)]
       let user = new User(name,"password",this.blockchain)
-      //console.log("Master wallet balance:",this.blockchain.masterWallet.getBalance());
-      //console.log("Attempting to send money:",this.blockchain.masterWallet.sendMoney(10000,user.getPublicKey()));
-      //this.blockchain.update();
-      //console.log("Attempting to send money:",this.blockchain.masterWallet.sendMoney(10000,user.getPublicKey()));
+
       users.push(user);
-      //this.blockchain.update();
-      //console.log("Blockchain length:",this.blockchain.blocks.length);
     }
     this.blockchain.findWallets();
     return users;

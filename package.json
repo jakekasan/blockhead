@@ -10,14 +10,13 @@
   "license": "ISC",
   "dependencies": {
     "big-integer": "^1.6.28",
-    "body-parser": "^1.18.2",
+    "body-parser": "^1.18.3",
     "cryptico": "^1.0.2",
     "crypto-js": "^3.1.9-1",
     "express": "^4.16.3",
     "forge": "^2.3.0",
     "jsrsasign": "^8.0.12",
-    "npm": "^6.0.0",
-    "sleep": "^5.1.1",
-    "ursa": "^0.9.4"
+    "npm": "^6.0.1",
+    "sleep": "^5.1.1"
   }
 }
