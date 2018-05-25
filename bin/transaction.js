@@ -2,13 +2,13 @@ const cjs = require('crypto-js');
 const jsrsa = require('jsrsasign');
 
 module.exports = class Transaction {
-  constructor(inputs,outputs,prvKey,blockchain){
+  constructor(inputs,outputs,prvKey,blockchain,sender){
     this.inputs = inputs;
     this.outputs = outputs;
     this.hash = this.getHash();
     this.signature = this.signTransaction(prvKey);
     this.blockchain = blockchain;
-    this.sender = undefined;
+    this.sender = sender ? sender : (this.inputs[0].owner);
   }
 
   getTransactionString(){
@@ -16,7 +16,8 @@ module.exports = class Transaction {
       "inputs":this.inputs,
       "outputs":this.outputs,
       "hash":this.hash,
-      "signature":this.signature
+      "signature":this.signature,
+      "sender":this.sender
     };
     return JSON.stringify(data);
   }
@@ -48,7 +49,7 @@ module.exports = class Transaction {
   signTransaction(prvKey){
     let sig = new jsrsa.crypto.Signature({'alg': 'SHA1withRSA'});
     sig.init(jsrsa.KEYUTIL.getKey(prvKey));
-    sig.updateString(this.getTransactionDataString());
+    sig.updateString(this.getHash());
     let signature = sig.sign();
     return signature.toString();
   }

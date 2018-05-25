@@ -32,33 +32,13 @@ module.exports = class Wallet {
     ];
 
     console.log("Submitting transaction");
-    let transaction = new Transaction(inputs,outputs,this.privateKey,this.blockchain);
+    let transaction = new Transaction(inputs,outputs,this.privateKey,this.blockchain,this.publicKey);
     if (!this.blockchain.submitTransaction(transaction)){
       return false;
     }
     return true;
   }
 
-  getInputs(blockchain){
-    console.log("\n\nPOOODLE!!!!!!\n\n");
-    let potentialInputs = [];
-    for (var i = blockchain.blocks.length - 1; i >= 0; i--) {
-      let outputs = blockchain.blocks[i].getData();
-      for (var j = 0; j < outputs.length; j++) {
-        let input = blockData[j];
-
-        if (input.data.to == this.name) {
-          let block = blockchain.blocks[i].hash;
-          let transaction = input.id;
-          potentialInputs.push({
-            "block":block,
-            "transaction":transaction
-          });
-        }
-      }
-    }
-    return potentialInputs;
-  }
 
   getBalance(){
     return this.blockchain.getBalance(this.publicKey);

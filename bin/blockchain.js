@@ -24,28 +24,11 @@ module.exports = class BlockChain {
     // genesis transactions
     let genesisOutput = new Output(this.masterWallet.publicKey,100000000);
 
-    let genesisTransaction = new Transaction([],[genesisOutput.getOutput()],this.privateKey,this);
+    let genesisTransaction = new Transaction([],[genesisOutput.getOutput()],this.privateKey,this,this.publicKey);
     this.blocks.push(new Block([genesisTransaction.getTransactionString()],this.difficulty));
     console.log("Blockchain created, current length:",this.blocks.length);
   }
 
-
-
-  submitTransaction(transaction){
-    if (!this.validateTransaction(transaction)) {
-      console.log("Transaction Rejected, Invalid Signature : ");
-      console.log(transaction.getTransactionString());
-      return false;
-    }
-    if (!this.checkInputs(transaction)) {
-      console.log("Transaction Rejected, Invalid Inputs : ");
-      console.log(transaction.getTransactionString());
-      return false;
-    }
-    console.log("Transaction Accepted : " + transaction.getTransactionID());
-    this.pending.push(transaction.getTransactionString());
-    return true;
-  }
 
   addBlock(data){
     this.blocks.push(new Block(data,this.difficulty,((this.blocks.length > 1) ? this.blocks[this.blocks.length-1].hash : undefined)));
@@ -64,8 +47,46 @@ module.exports = class BlockChain {
     return true;
   }
 
+  /*
+
+    Transaction Tools
+
+  */
+
+
+  submitTransaction(transaction){
+    if (!this.validateTransaction(transaction)) {
+      console.log("Transaction Rejected, Invalid Signature : ");
+      console.log(transaction.getTransactionString());
+      return false;
+    }
+    if (!this.validateInputs(transaction)) {
+      console.log("Transaction Rejected, Invalid Inputs : ");
+      console.log(transaction.getTransactionString());
+      return false;
+    }
+    console.log("Transaction Accepted : " + transaction.getTransactionID());
+    this.pending.push(transaction.getTransactionString());
+    return true;
+  }
+
+  checkTransaction(transaction){
+    if (!this.validateSignature(transaction.signature,transaction.sender,transaction.hash)) {
+      console.log("Transaction Rejected : Invalid Signature");
+      return false;
+    }
+    if (!this.validateInputs(transaction.inputs)){
+      console.log("Transaction Rejected : Invalid Inputs");
+      return false;
+    }
+    if (transaction.inputs.map(txo => { return txo.value }).reduce((acc,cur) => { acc + cur },0) < transaction.outputs.map(txo => { return txo.value }).reduce((acc,cur) => { acc + cur },0)) {
+      console.log("Transaction Rejected : Input sum less than Output sum");
+      return false;
+    }
+    return true;
+  }
+
   validateSignature(signature,sender,data){
-    console.log("validating signature...");
     let sig = new jsrsa.crypto.Signature({'alg': 'SHA1withRSA'});
     sender = jsrsa.KEYUTIL.getKey(sender);
     sig.init(sender);
@@ -113,8 +134,8 @@ module.exports = class BlockChain {
     return potentialInputs;
   }
 
-  checkInputs(transaction){
-    return !transaction.inputs.map((txo) => { this.isOutputSpent(txo) }).includes(true);
+  validateInputs(inputs){
+    return !inputs.map((txo) => { this.isOutputSpent(txo) }).includes(true);
   }
 
   isOutputSpent(givenOutput){
@@ -152,59 +173,11 @@ module.exports = class BlockChain {
     } else {
       return true;
     }
-
-    //
-    // for (var i = this.blocks.length - 1; i >= 0; i--) {
-    //   let block = this.blocks[i].getObject();
-    //   for (let j = 0; j < block.data.length; j++) {
-    //     let transaction = JSON.parse(block.data[j]);
-    //     for (let k = 0; k < transaction.inputs.length; k++){
-    //       if (transaction.inputs[k] == output) {
-    //         // output has been used
-    //         return true;
-    //       }
-    //     }
-    //     for (let k = 0; k < transaction.outputs.length; k++){
-    //       if (transaction.outputs[k] == output) {
-    //         // found the output
-    //         exists = true;
-    //       }
-    //     }
-    //   }
-    //   if (exists) {
-    //     return false;
-    //   }
-    // }
   }
 
   getOutputs(publicKey,amount){
-    //console.log("Getting outputs");
     var outputs = [];
     var balance = 0;
-
-    // check through pending transactions - NOT anymore... getting inputs from pending transactions is a bad idea...
-
-    // for (let transaction of this.pending.slice().reverse()) {
-    //   transaction = JSON.parse(transaction);
-    //   outputs = outputs.filter((txo) => { !transaction.inputs.includes(txo) });
-    //   if (outputs.length > 0) {
-    //     balance = outputs.map((txo) => { txo.value }).reduce((acc,el) => (el + acc));
-    //   }
-    //   //console.log(transaction);
-    //   for (let output of transaction.outputs) {
-    //     if (output.owner == publicKey) {
-    //       let newOutput = new Output(output.owner,output.value);
-    //       balance += output.value;
-    //       newOutput.setHashes("",transaction.hash);
-    //       outputs.push(newOutput.getInput());
-    //     }
-    //     if (balance >= amount) {
-    //       return outputs;
-    //     }
-    //   }
-    // }
-
-    // now check written blocks
 
     for (let block of this.blocks.slice().reverse()) {
       for (let transaction of block.getData().slice().reverse()) {
@@ -225,29 +198,21 @@ module.exports = class BlockChain {
         }
       }
     }
-
     return false;
   }
 
   getBalance(publicKey){
-    //console.log("Getting balance");
     let outputs = [];
     if (this.blocks.length < 1) {
-      //console.log("Blocks are too short");
       return 0;
     }
     for (let block of this.blocks) {
-
       for (let transaction of block.getData()) {
-
         outputs = outputs.filter(txo => {
           return !transaction.inputs.map(input => { return ((input.owner == txo.owner) && (input.value == txo.value) && (input.blockHash == txo.blockHash) && (input.transHash == txo.transHash)) }).includes(true);
         });
-        //console.log(transaction.outputs);
         for (let output of transaction.outputs) {
-
           if (output.owner == publicKey) {
-            console.log("getBalance - found a relevant output! Value:",output.value);
             let newOutput = new Output(output.owner,output.value);
             newOutput.setHashes(block.hash,transaction.hash);
             outputs.push(newOutput.getInput());
@@ -255,17 +220,10 @@ module.exports = class BlockChain {
         }
       }
     }
-
     if (outputs.length < 1) {
-      //console.log("No outputs found for",publicKey);
       return 0;
     }
-    //console.log("Outputs:");
-    //console.log(outputs);
-    let balance = outputs.reduce((acc,cur) => acc + cur.value,0);
-    //console.log("Key: ",publicKey);
-    //console.log("Balance:",balance);
-    return balance;
+    return outputs.reduce((acc,cur) => acc + cur.value,0);
   }
 
   update(){
@@ -275,6 +233,11 @@ module.exports = class BlockChain {
       this.addBlock([transactions]);
       //this.pending = [];
     }
+  }
+
+  checkTransactionJSON(data){
+    // validate the transaction
+
   }
 
   print(){
@@ -298,8 +261,6 @@ module.exports = class BlockChain {
   getRandomPublicKey(){
     return this.db.getRandomPublicKey();
   }
-
-  //debugging
 
   findWallets(){
     let wallets = [];
