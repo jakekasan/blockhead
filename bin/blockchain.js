@@ -67,47 +67,51 @@ module.exports = class BlockChain {
 
   gatherTxs(){
     let tx = this.txPool.getTx();
-    if ((tx != false) && (this.pending < 10)) {
-      if (this.pending.length < 1) {
-        return
-      }
-      this.pending.push(tx);
+    if ((tx != false) && (this.pending.length < 1)) {
+      this.pending.push(tx.txData);
     } else {
       this.addBlock(this.pending);
       this.pending = [];
+      this.pending.push(tx.txData);
     }
   }
 
   addBlock(data){
+    // console.log("Length:",data.length);
+    console.log(data.length);
     // add up Tx fees and add them as a single output transaction
-    let fees = data.map(tx => { tx.inputs.map(input => { return input.value}).reduce((acc,cur) => { acc + cur},0) - tx.outputs.map(output => { return output.value }).reduce((acc,cur) => { acc + cur}) });
+    let fees = data.map(tx => { JSON.parse(tx).inputs.map(input => { return input.value}).reduce((acc,cur) => { acc + cur},0) - JSON.parse(tx).outputs.map(output => { return output.value }).reduce((acc,cur) => { acc + cur}) });
     if (fees > 0){
       let txFee = new Transaction(
-        ["TxFee"],
-        [{
-          "owner":this.publicKey,
+        JSON.parse(JSON.stringify(["TxFee"])),
+        JSON.parse(JSON.stringify([{
+          "owner":jsrsa.KEYUTIL.getPEM(this.publicKey),
           "value":fees
-        }],
+        }])),
         this.privateKey,
         this,
         this.publicKey
       );
       data.push(txFee.getTransactionString());
-
-      // now add a new transaction for the new coins to be created with this block
-      let newCoins = new Transaction(
-        ["NewCoins"],
-        [{
-          "owner":this.publicKey,
-          "value":10000
-        }],
-        this.privateKey,
-        this,
-        this.publicKey
-      );
-      data.push(newCoins.getTransactionString())
     }
-    this.blocks.push(new Block(data,this.difficulty,this.blocks[this.blocks.length-2].hash));
+
+    // now add a new transaction for the new coins to be created with this block
+    let newCoins = new Transaction(
+      JSON.parse(JSON.stringify(["NewCoins"])),
+      JSON.parse(JSON.stringify([{
+        "owner":jsrsa.KEYUTIL.getPEM(this.publicKey),
+        "value":10000
+      }])),
+      this.privateKey,
+      this,
+      this.publicKey
+    );
+    data.push(newCoins.getTransactionString())
+
+
+    console.log("Data going into new block:");
+    console.log(data.length);
+    this.blocks.push(new Block(data,this.difficulty,this.blocks[this.blocks.length-1].hash));
   }
 
 
@@ -171,12 +175,18 @@ module.exports = class BlockChain {
 
   isOutputSpent(givenOutput){
     // Does it even exist?
+    if (givenOutput.value < 0) {
+      return true;
+    }
     if (this.blocks.length < 2) {
       return false;
     }
     var exists = false;
+    console.log("\nHere it keeps crashing...\n");
     for (let block of this.blocks.slice().reverse()) {
+      console.log(block.getData());
       for (let transaction of block.getData()) {
+        console.log(transaction);
         for (let input of transaction.inputs) {
           if (input == givenOutput) {
             return true;
@@ -189,16 +199,22 @@ module.exports = class BlockChain {
         }
       }
     }
-
-    for (let block of this.pending) {
-      for (let transaction of block.getData()) {
-        for (let input of transaction.inputs) {
-          if (input == givenOutput){
-            return true;
-          }
-        }
+    if (this.pending.length < 1) {
+      if (exists) {
+        return false;
+      } else {
+        return true;
       }
     }
+    // for (let transaction of this.pending) {
+    //   console.log("\n\nERROR!!\n");
+    //   console.log(transaction);
+    //   for (let input of transaction.inputs) {
+    //     if (input == givenOutput){
+    //       return true;
+    //     }
+    //   }
+    // }
     if (exists) {
       return false;
     } else {

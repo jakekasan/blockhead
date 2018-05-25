@@ -27,21 +27,22 @@ module.exports = class Simulator {
   setup(){
     for (let user of this.users) {
       console.log("Master wallet sending money to",user.getPublicKey());
-      console.log("Tx succeeded?",this.blockchain.masterWallet.sendMoneyJson(100000,user.getPublicKey()));
+      console.log("Tx succeeded?",this.blockchain.masterWallet.sendMoneyJson(10000000,user.getPublicKey()));
       this.blockchain.gatherTxs();
     }
   }
 
   runSimulator(){
-    // while (true) {
-    //   for (let i = 0; i < this.numberOfTransactionsPerMinute; i++){
-    //     (this.getRandomUser()).makePayment();
-    //     this.blockchain.update();
-    //   }
-    //   sleep.sleep(5);
-    // }
-    //this.blockchain.print();
+    while (true) {
+      for (let i = 0; i < this.numberOfTransactionsPerMinute; i++){
+        (this.getRandomUser()).makePayment();
+        this.blockchain.gatherTxs();
+      }
+      sleep.sleep(5);
+    }
+    this.blockchain.print();
     this.blockchain.findWallets();
+    console.log(this.blockchain.blocks.length);
   }
 
   getRandomUser(){
