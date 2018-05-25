@@ -9,6 +9,7 @@ const cjs = require('crypto-js');
 
 module.exports = class BlockChain {
   constructor(difficulty,pwd="boobs",firstRecipients) {
+    this.pwd = pwd;
     this.blocks = [];
     this.difficulty = difficulty;
     this.pending = [];
@@ -17,11 +18,19 @@ module.exports = class BlockChain {
     this.privateKey = keyObj.prvKeyObj;
     this.masterHash = cjs.SHA256(pwd);
     this.db = new DB(this);
-    this.masterWallet = new Wallet("admin",this,this.privateKey,this.publicKey);
-    this.addToDatabase(this.masterWallet,pwd);
+
+    this.txPool = undefined;
 
     // genesis block, give master loads of money
     // genesis transactions
+
+  }
+
+  setTxPool(txPool){
+    this.txPool = txPool;
+    this.masterWallet = new Wallet("admin",this,this.privateKey,this.publicKey,this.txPool);
+    this.addToDatabase(this.masterWallet,this.pwd);
+
     let genesisOutput = new Output(this.masterWallet.publicKey,100000000);
 
     let genesisTransaction = new Transaction([],[genesisOutput.getOutput()],this.privateKey,this,this.publicKey);
@@ -30,9 +39,9 @@ module.exports = class BlockChain {
   }
 
 
-  addBlock(data){
-    this.blocks.push(new Block(data,this.difficulty,((this.blocks.length > 1) ? this.blocks[this.blocks.length-1].hash : undefined)));
-  }
+  // addBlock(data){
+  //   this.blocks.push(new Block(data,this.difficulty,((this.blocks.length > 1) ? this.blocks[this.blocks.length-1].hash : undefined)));
+  // }
 
   verifyBlockChain(){
     if (this.blocks.length < 2) {
@@ -53,11 +62,61 @@ module.exports = class BlockChain {
 
   */
 
+  // Get up to 10 of transactions from tX pool
+  // if tX pool has less than that, just make the block with whatever there is
+
+  gatherTxs(){
+    let tx = this.txPool.getTx();
+    if ((tx != false) && (this.pending < 10)) {
+      if (this.pending.length < 1) {
+        return
+      }
+      this.pending.push(tx);
+    } else {
+      this.addBlock(this.pending);
+      this.pending = [];
+    }
+  }
+
+  addBlock(data){
+    // add up Tx fees and add them as a single output transaction
+    let fees = data.map(tx => { tx.inputs.map(input => { return input.value}).reduce((acc,cur) => { acc + cur},0) - tx.outputs.map(output => { return output.value }).reduce((acc,cur) => { acc + cur}) });
+    if (fees > 0){
+      let txFee = new Transaction(
+        ["TxFee"],
+        [{
+          "owner":this.publicKey,
+          "value":fees
+        }],
+        this.privateKey,
+        this,
+        this.publicKey
+      );
+      data.push(txFee.getTransactionString());
+
+      // now add a new transaction for the new coins to be created with this block
+      let newCoins = new Transaction(
+        ["NewCoins"],
+        [{
+          "owner":this.publicKey,
+          "value":10000
+        }],
+        this.privateKey,
+        this,
+        this.publicKey
+      );
+      data.push(newCoins.getTransactionString())
+    }
+    this.blocks.push(new Block(data,this.difficulty,this.blocks[this.blocks.length-2].hash));
+  }
+
+
+
 
   submitTransaction(transaction){
     if (!this.validateTransaction(transaction)) {
       console.log("Transaction Rejected, Invalid Signature : ");
-      console.log(transaction.getTransactionString());
+      console.log(transaction.signature);
       return false;
     }
     if (!this.validateInputs(transaction)) {
@@ -105,34 +164,6 @@ module.exports = class BlockChain {
     return sig.verify(transaction.signature);
   }
 
-  getInputsFromTransaction(transaction){
-    //let name = (typeof name === "string" || name instanceof String) ? name : jsrsa.KEYUTIL.getPEM(name);
-    let name = transaction.sender;
-    let potentialInputs = [];
-    let tempBalance = 0;
-    for (var i = this.blocks.length-1; i >= 0 ; i--) {
-      let blockData = JSON.parse(this.blocks[i].data);
-      for (var j = 0; j < blockData.length; j++) {
-        let input = (blockData[j]);
-        if (input.data.to == name) {
-          //console.log("Hash: " + this.blocks[i].hash + "\tInput: " + input.id);
-          potentialInputs.push({
-            "block":JSON.parse(this.blocks[i]).hash,
-            "transaction":input.id,
-          });
-          //console.log(JSON.stringify(input,null,2));
-          tempBalance += input.data.amount;
-        }
-        if (tempBalance >= balance) {
-          return potentialInputs;
-        }
-      }
-    }
-    if (tempBalance < balance) {
-      return false;
-    }
-    return potentialInputs;
-  }
 
   validateInputs(inputs){
     return !inputs.map((txo) => { this.isOutputSpent(txo) }).includes(true);

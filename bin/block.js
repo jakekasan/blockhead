@@ -15,7 +15,7 @@ module.exports = class Block {
 
   mineBlock() {
     var hash = this.getHash().toString();
-    while (hash.substring(0,this.difficulty) != Array(this.difficulty).fill(0).toString()) {
+    while (hash.substring(0,this.difficulty) != Array(this.difficulty).fill(0).join("")) {
       this.nonce++;
       hash = this.getHash().toString();
     }

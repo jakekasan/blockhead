@@ -8,7 +8,7 @@ module.exports = class Transaction {
     this.hash = this.getHash();
     this.signature = this.signTransaction(prvKey);
     this.blockchain = blockchain;
-    this.sender = sender ? sender : (this.inputs[0].owner);
+    this.sender = (sender) ? ((typeof sender === "string" | sender instanceof String) ? sender : jsrsa.KEYUTIL.getPEM(sender)) : (this.inputs[0].owner);
   }
 
   getTransactionString(){

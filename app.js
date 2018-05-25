@@ -14,13 +14,15 @@ const bigInt = require('big-integer');
 const forge = require('forge')
 const bodyParser = require('body-parser');
 const Simulator = require('./test/simulator.js');
-
+const TxPool = require('./bin/txpool.js');
 
 const router = require('./controllers/router.js');
 
 
 const bc = new BlockChain(1);
-const simulator = new Simulator(bc,4,5);
+const txPool = new TxPool("home",bc);
+bc.setTxPool(txPool);
+const simulator = new Simulator(bc,10,50,txPool);
 var app = express();
 
 app.use(bodyParser.json());
