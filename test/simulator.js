@@ -7,8 +7,8 @@ module.exports = class Simulator {
     this.txPool = txPool;
     this.users = this.makeUsers(numberOfUsers);
     this.numberOfTransactionsPerMinute = numberOfTransactionsPerMinute;
-    console.log("Printing txPool");
-    console.log(txPool);
+    //console.log("Printing txPool");
+    //console.log(txPool);
     this.setup();
   }
 
@@ -26,23 +26,22 @@ module.exports = class Simulator {
 
   setup(){
     for (let user of this.users) {
-      console.log("Master wallet sending money to",user.getPublicKey());
-      console.log("Tx succeeded?",this.blockchain.masterWallet.sendMoneyJson(10000000,user.getPublicKey()));
+      //console.log("Master wallet sending money to",user.getPublicKey());
+      //console.log("Tx succeeded?",this.blockchain.masterWallet.sendMoneyJson(10000000,user.getPublicKey()));
+      this.blockchain.masterWallet.sendMoneyJson(10000000,user.getPublicKey());
       this.blockchain.gatherTxs();
     }
   }
 
   runSimulator(){
-    while (true) {
-      for (let i = 0; i < this.numberOfTransactionsPerMinute; i++){
-        (this.getRandomUser()).makePayment();
-        this.blockchain.gatherTxs();
-      }
-      sleep.sleep(5);
+    for (let i = 0; i < this.numberOfTransactionsPerMinute; i++){
+      (this.getRandomUser()).makePayment();
+      this.blockchain.gatherTxs();
     }
-    this.blockchain.print();
+
+    this.blockchain.print()
     this.blockchain.findWallets();
-    console.log(this.blockchain.blocks.length);
+
   }
 
   getRandomUser(){

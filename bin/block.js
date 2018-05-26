@@ -19,6 +19,7 @@ module.exports = class Block {
       this.nonce++;
       hash = this.getHash().toString();
     }
+    console.log("Block Mined");
     return hash;
   }
 

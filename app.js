@@ -22,7 +22,7 @@ const router = require('./controllers/router.js');
 const bc = new BlockChain(1);
 const txPool = new TxPool("home",bc);
 bc.setTxPool(txPool);
-const simulator = new Simulator(bc,10,50,txPool);
+const simulator = new Simulator(bc,10,500,txPool);
 var app = express();
 
 app.use(bodyParser.json());

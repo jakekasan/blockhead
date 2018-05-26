@@ -67,27 +67,46 @@ module.exports = class BlockChain {
 
   gatherTxs(){
     let tx = this.txPool.getTx();
-    if ((tx != false) && (this.pending.length < 1)) {
+    if (tx == false) {
+      return
+    }
+    if (tx == undefined) {
+      return
+    }
+    if ((tx != false) && (this.pending.length < 4)) {
       this.pending.push(tx.txData);
-    } else {
+    } else if ((tx != false) && (this.pending.length >= 4)) {
+      this.pending.push(tx.txData);
       this.addBlock(this.pending);
       this.pending = [];
-      this.pending.push(tx.txData);
     }
   }
 
   addBlock(data){
     // console.log("Length:",data.length);
-    console.log(data.length);
+    //console.log("Here is where it crashed");
+    //console.log(data.length);
+    //console.log(data);
+    //console.log(JSON.parse(data[0]));
     // add up Tx fees and add them as a single output transaction
     let fees = data.map(tx => { JSON.parse(tx).inputs.map(input => { return input.value}).reduce((acc,cur) => { acc + cur},0) - JSON.parse(tx).outputs.map(output => { return output.value }).reduce((acc,cur) => { acc + cur}) });
     if (fees > 0){
+      // let txFee = new Transaction(
+      //   JSON.parse(JSON.stringify(["TxFee"])),
+      //   JSON.parse(JSON.stringify([{
+      //     "owner":jsrsa.KEYUTIL.getPEM(this.publicKey),
+      //     "value":fees
+      //   }])),
+      //   this.privateKey,
+      //   this,
+      //   this.publicKey
+      // );
+      let output = new Output(jsrsa.KEYUTIL.getPEM(this.publicKey),fees)
       let txFee = new Transaction(
-        JSON.parse(JSON.stringify(["TxFee"])),
-        JSON.parse(JSON.stringify([{
-          "owner":jsrsa.KEYUTIL.getPEM(this.publicKey),
-          "value":fees
-        }])),
+        ["TxFee"],
+        [
+          output.getOutput()
+        ],
         this.privateKey,
         this,
         this.publicKey
@@ -96,21 +115,19 @@ module.exports = class BlockChain {
     }
 
     // now add a new transaction for the new coins to be created with this block
+    let output = new Output(jsrsa.KEYUTIL.getPEM(this.publicKey),10000)
     let newCoins = new Transaction(
-      JSON.parse(JSON.stringify(["NewCoins"])),
-      JSON.parse(JSON.stringify([{
-        "owner":jsrsa.KEYUTIL.getPEM(this.publicKey),
-        "value":10000
-      }])),
+      ["NewCoins"],
+      [
+        output.getOutput()
+      ],
       this.privateKey,
       this,
       this.publicKey
     );
     data.push(newCoins.getTransactionString())
-
-
-    console.log("Data going into new block:");
-    console.log(data.length);
+    //console.log("Data going into new block:");
+    //console.log(data.length);
     this.blocks.push(new Block(data,this.difficulty,this.blocks[this.blocks.length-1].hash));
   }
 
@@ -158,7 +175,7 @@ module.exports = class BlockChain {
   }
 
   validateTransaction(transaction){
-    console.log("validating transaction...");
+    //console.log("validating transaction...");
     //console.log(transaction);
     let sig = new jsrsa.crypto.Signature({'alg':'SHA1withRSA'});
     let key = jsrsa.KEYUTIL.getKey(transaction.getSender())
@@ -182,11 +199,11 @@ module.exports = class BlockChain {
       return false;
     }
     var exists = false;
-    console.log("\nHere it keeps crashing...\n");
+    //console.log("\nHere it keeps crashing...\n");
     for (let block of this.blocks.slice().reverse()) {
-      console.log(block.getData());
+      //console.log(block.getData());
       for (let transaction of block.getData()) {
-        console.log(transaction);
+        //console.log(transaction);
         for (let input of transaction.inputs) {
           if (input == givenOutput) {
             return true;
@@ -223,29 +240,40 @@ module.exports = class BlockChain {
   }
 
   getOutputs(publicKey,amount){
-    var outputs = [];
+    var outputs = this.getAllOutputs(publicKey);
+    var txOutputs = [];
     var balance = 0;
 
-    for (let block of this.blocks.slice().reverse()) {
-      for (let transaction of block.getData().slice().reverse()) {
-        outputs = outputs.filter((txo) => { !transaction.inputs.includes(txo) });
-        if (outputs.length > 0) {
-          balance = outputs.map((txo) => { txo.value }).reduce((acc,el) => (el + acc));
-        }
+    for (let output of outputs.slice().reverse()){
+      balance = balance + output.value;
+      txOutputs.push(output);
+      if (balance >= amount) {
+        return txOutputs;
+      }
+    }
+    return false;
+  }
+
+  getAllOutputs(publicKey){
+    let outputs = [];
+    if (this.blocks.length < 1) {
+      return 0;
+    }
+    for (let block of this.blocks) {
+      for (let transaction of block.getData()) {
+        outputs = outputs.filter(txo => {
+          return !transaction.inputs.map(input => { return ((input.owner == txo.owner) && (input.value == txo.value) && (input.blockHash == txo.blockHash) && (input.transHash == txo.transHash)) }).includes(true);
+        });
         for (let output of transaction.outputs) {
           if (output.owner == publicKey) {
             let newOutput = new Output(output.owner,output.value);
-            balance += output.value;
             newOutput.setHashes(block.hash,transaction.hash);
             outputs.push(newOutput.getInput());
-          }
-          if (balance >= amount) {
-            return outputs;
           }
         }
       }
     }
-    return false;
+    return outputs;
   }
 
   getBalance(publicKey){
@@ -275,7 +303,7 @@ module.exports = class BlockChain {
 
   update(){
     if (this.pending.length > 0) {
-      console.log("Emptying pending transactions");
+      //console.log("Emptying pending transactions");
       let transactions = this.pending.pop()
       this.addBlock([transactions]);
       //this.pending = [];
@@ -321,9 +349,9 @@ module.exports = class BlockChain {
         }
       }
     }
-    console.log("\n\n\tWallets:");
+    //console.log("\n\n\tWallets:");
     for (let wallet of wallets) {
-      console.log(wallet,"Balance:",this.getBalance(wallet));
+      console.log(wallet.name,", Balance:",this.getBalance(wallet));
     }
   }
 

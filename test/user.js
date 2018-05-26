@@ -24,14 +24,15 @@ module.exports = class User {
       to = this.bc.getRandomPublicKey();
     } while (to == this.wallet.publicKey);
 
-    console.log("My balance is",this.wallet.getBalance());
+    //console.log("My balance is",this.wallet.getBalance());
 
-    var amount = Math.floor(Math.random()*100);
+    var amount = Math.floor(Math.random()*this.wallet.getBalance());
     //console.log("\n");
     //console.log(this.wallet.publicKey);
     //console.log("sending",amount.toString(),"to",to);
     //console.log("\n");
-    console.log(this.wallet.sendMoneyJson(amount,to));
+    //console.log();
+    this.wallet.sendMoneyJson(amount,to)
   }
 
 

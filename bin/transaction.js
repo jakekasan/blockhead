@@ -3,8 +3,8 @@ const jsrsa = require('jsrsasign');
 
 module.exports = class Transaction {
   constructor(inputs,outputs,prvKey,blockchain,sender){
-    this.inputs = inputs;
-    this.outputs = outputs;
+    this.inputs = inputs; //(typeof inputs === 'string' || inputs instanceof String) ? inputs: JSON.stringify(inputs);
+    this.outputs = outputs; //(typeof outputs === 'string' || outputs instanceof String) ? outputs: JSON.stringify(outputs);
     this.hash = this.getHash();
     this.signature = this.signTransaction(prvKey);
     this.blockchain = blockchain;

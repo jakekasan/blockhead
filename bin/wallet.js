@@ -26,13 +26,13 @@ module.exports = class Wallet {
     }
     let inputValue = inputs.map((x)=>{return x.value}).reduce((acc,cur) => cur + acc,0);
     let leftover = inputValue - amount;
-    console.log("inputValue:",inputValue,"  leftover = ",leftover);
+    //console.log("inputValue:",inputValue,"  leftover = ",leftover);
     let outputs = [
       (new Output(recipient,amount)).getOutput(),
       (new Output(this.publicKey,leftover)).getOutput()
     ];
 
-    console.log("Submitting transaction");
+    //console.log("Submitting transaction");
     let transaction = new Transaction(inputs,outputs,this.privateKey,this.blockchain,this.publicKey);
     if (!this.blockchain.submitTransaction(transaction)){
       return false;
@@ -50,14 +50,15 @@ module.exports = class Wallet {
       return false;
     }
     let inputValue = inputs.map((x)=>{return x.value}).reduce((acc,cur) => cur + acc,0);
+    //console.log("Balance of wallet:",this.getBalance(),", Amount trying to send: ", amount, ", Value of inputs:",inputValue);
     let leftover = inputValue - amount;
-    console.log("inputValue:",inputValue,"  leftover = ",leftover);
+    //console.log("inputValue:",inputValue,"  leftover = ",leftover);
     let outputs = [
       (new Output(recipient,amount)).getOutput(),
       (new Output(this.publicKey,leftover)).getOutput()
     ];
 
-    console.log("Submitting transaction");
+    //console.log("Submitting transaction");
 
     let transaction = new Transaction(inputs,outputs,this.privateKey,this.blockchain,this.publicKey);
 

@@ -15,6 +15,8 @@ module.exports = class TxPool {
       "txData": tx,
       "txFee": JSON.parse(tx).inputs.map(input => { input.value }).reduce((acc,curr) => { acc + curr},0) - JSON.parse(tx).outputs.map(output => { output.value }).reduce((acc,curr) => { acc + curr},0)
     });
+
+    //this.pool.push(tx);
     return true;
   }
 
@@ -24,6 +26,8 @@ module.exports = class TxPool {
       return false;
     }
     let chosen = this.pool.pop(0);
+    //console.log("Sending Transaction:");
+    //console.log(JSON.parse(chosen.txData));
     this.sent.push(chosen);
     return chosen;
   }
@@ -33,23 +37,25 @@ module.exports = class TxPool {
   }
 
   validateTransaction(tx){
-    console.log("Validating transaction");
+    //console.log("Validating transaction");
     tx = JSON.parse(tx);
-    console.log(JSON.stringify(tx,null,2));
-    console.log(tx.signature);
-    console.log(tx.sender);
-    console.log(tx.hash);
     if (!this.bc.validateSignature(tx.signature,tx.sender,tx.hash)){
-      console.log("Invalid Transaction");
+      //console.log("Invalid Signature");
       return false;
     }
     if (!this.bc.validateInputs(tx.inputs)){
+      //console.log("Invalid Inputs");
       return false;
     }
     if (tx.inputs.map(input => { input.value }).reduce((acc,curr) => { acc + curr},0) < tx.outputs.map(output => { output.value }).reduce((acc,curr) => { acc + curr},0)){
+      //console.log("Inputs are less than outputs");
       return false;
     }
-    console.log("Finished validating transaction");
+    if (tx.outputs.map(output => { return (output.value < 0) }).includes(true)){
+      //console.log("An output is negative");
+      return false;
+    }
+    //console.log("Finished validating transaction");
     return true;
   }
 
