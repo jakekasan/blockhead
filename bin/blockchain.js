@@ -8,12 +8,14 @@ const jsrsa = require('jsrsasign');
 const cjs = require('crypto-js');
 
 module.exports = class BlockChain {
-  constructor(difficulty,pwd="boobs",firstRecipients) {
+  constructor(difficulty,pwd="boobs",firstRecipients,existingChain = false,keyObj = undefined) {
     this.pwd = pwd;
     this.blocks = [];
     this.difficulty = difficulty;
     this.pending = [];
-    let keyObj = jsrsa.KEYUTIL.generateKeypair("RSA",1024);
+    if (!keyObj) {
+        keyObj = jsrsa.KEYUTIL.generateKeypair("RSA",1024);
+    }
     this.publicKey = keyObj.pubKeyObj;
     this.privateKey = keyObj.prvKeyObj;
     this.masterHash = cjs.SHA256(pwd);
@@ -43,13 +45,16 @@ module.exports = class BlockChain {
   //   this.blocks.push(new Block(data,this.difficulty,((this.blocks.length > 1) ? this.blocks[this.blocks.length-1].hash : undefined)));
   // }
 
-  verifyBlockChain(){
-    if (this.blocks.length < 2) {
+  verifyBlockChain(blockchain){
+    if (!blockchain){
+      let blockchain = this.blockchain;
+    }
+    if (blockchain.blocks.length < 2) {
       console.log("Blockchain too short to verify.");
       return true;
     }
-    for (var i = this.blocks.length - 1; i > 1 ; i--) {
-      if (this.blocks[i].prevHash != this.blocks[i-1].hash) {
+    for (var i = blockchain.blocks.length - 1; i > 1 ; i--) {
+      if (blockchain.blocks[i].prevHash != blockchain.blocks[i-1].hash) {
         return false;
       }
     }
@@ -83,24 +88,9 @@ module.exports = class BlockChain {
   }
 
   addBlock(data){
-    // console.log("Length:",data.length);
-    //console.log("Here is where it crashed");
-    //console.log(data.length);
-    //console.log(data);
-    //console.log(JSON.parse(data[0]));
     // add up Tx fees and add them as a single output transaction
     let fees = data.map(tx => { JSON.parse(tx).inputs.map(input => { return input.value}).reduce((acc,cur) => { acc + cur},0) - JSON.parse(tx).outputs.map(output => { return output.value }).reduce((acc,cur) => { acc + cur}) });
     if (fees > 0){
-      // let txFee = new Transaction(
-      //   JSON.parse(JSON.stringify(["TxFee"])),
-      //   JSON.parse(JSON.stringify([{
-      //     "owner":jsrsa.KEYUTIL.getPEM(this.publicKey),
-      //     "value":fees
-      //   }])),
-      //   this.privateKey,
-      //   this,
-      //   this.publicKey
-      // );
       let output = new Output(jsrsa.KEYUTIL.getPEM(this.publicKey),fees)
       let txFee = new Transaction(
         ["TxFee"],
@@ -126,8 +116,7 @@ module.exports = class BlockChain {
       this.publicKey
     );
     data.push(newCoins.getTransactionString())
-    //console.log("Data going into new block:");
-    //console.log(data.length);
+    
     this.blocks.push(new Block(data,this.difficulty,this.blocks[this.blocks.length-1].hash));
   }
 
