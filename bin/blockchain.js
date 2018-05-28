@@ -23,16 +23,15 @@ module.exports = class BlockChain {
 
     this.txPool = undefined;
 
-    // genesis block, give master loads of money
-    // genesis transactions
-
   }
 
   setTxPool(txPool){
     this.txPool = txPool;
     this.masterWallet = new Wallet("admin",this,this.privateKey,this.publicKey,this.txPool);
     this.addToDatabase(this.masterWallet,this.pwd);
+  }
 
+  createGenesisBlock(){
     let genesisOutput = new Output(this.masterWallet.publicKey,100000000);
 
     let genesisTransaction = new Transaction([],[genesisOutput.getOutput()],this.privateKey,this,this.publicKey);
@@ -116,7 +115,7 @@ module.exports = class BlockChain {
       this.publicKey
     );
     data.push(newCoins.getTransactionString())
-    
+
     this.blocks.push(new Block(data,this.difficulty,this.blocks[this.blocks.length-1].hash));
   }
 

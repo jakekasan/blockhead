@@ -36,10 +36,20 @@ module.exports = function(app,blockchain,txPool){
     res.send(req.body);
   });
 
-  app.get('/gossip/info',(req,res) => {
+  app.get('/gossip',(req,res) => {
     console.log(req.body);
-
+    res.send({
+      "blockchain":blockchain.getString());
+      "length":blockchain.blocks.length;
+    });
   });
+
+  app.post('/gossip',(req,res) => {
+    console.log(req.body);
+    if (req.body.blocklength > blockchain.blocks.length) {
+
+    }
+  })
 
 
 
