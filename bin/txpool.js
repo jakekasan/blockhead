@@ -21,15 +21,17 @@ module.exports = class TxPool {
   }
 
   getTx(){
-    // in the future, this function will sort the list of known tXs by fee and always return the most profitable
     if (this.pool.length < 1) {
       return false;
     }
     let chosen = this.pool.pop(0);
-    //console.log("Sending Transaction:");
-    //console.log(JSON.parse(chosen.txData));
     this.sent.push(chosen);
     return chosen;
+  }
+
+  getAllTransactions(){
+    let txList = this.pool.map(tx => tx.txData);
+    return txList;
   }
 
   validatePool(){

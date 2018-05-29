@@ -8,7 +8,7 @@ routing module
 
 */
 
-module.exports = function(app,blockchain,txPool){
+module.exports = function(app,gossip){
 
   app.get('/',(req,res) => {
     console.log("[GET] /");
@@ -39,17 +39,19 @@ module.exports = function(app,blockchain,txPool){
   app.get('/gossip',(req,res) => {
     console.log(req.body);
     res.send({
-      "blockchain":blockchain.getString());
-      "length":blockchain.blocks.length;
+      "blockchain":gossip.blockchain.getString());
     });
   });
 
   app.post('/gossip',(req,res) => {
     console.log(req.body);
-    if (req.body.blocklength > blockchain.blocks.length) {
+    gossip.validateNewBlockchain(JSON.parse(req.body.blockchain),JSON.parse(req.body.txs));
+  });
 
-    }
+  app.get('/gossip/tx',(req,res) => {
+    // return known transactions
   })
+
 
 
 

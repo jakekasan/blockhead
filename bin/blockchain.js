@@ -44,16 +44,16 @@ module.exports = class BlockChain {
   //   this.blocks.push(new Block(data,this.difficulty,((this.blocks.length > 1) ? this.blocks[this.blocks.length-1].hash : undefined)));
   // }
 
-  verifyBlockChain(blockchain){
-    if (!blockchain){
-      let blockchain = this.blockchain;
+  verifyBlockChain(blocks){
+    if (!blocks){
+      let blocks = this.blockchain.blocks;
     }
-    if (blockchain.blocks.length < 2) {
+    if (blocks.length < 2) {
       console.log("Blockchain too short to verify.");
       return true;
     }
-    for (var i = blockchain.blocks.length - 1; i > 1 ; i--) {
-      if (blockchain.blocks[i].prevHash != blockchain.blocks[i-1].hash) {
+    for (var i = blocks.length - 1; i > 1 ; i--) {
+      if (blocks[i].prevHash != blocks[i-1].hash) {
         return false;
       }
     }
