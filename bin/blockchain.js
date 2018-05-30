@@ -71,19 +71,29 @@ module.exports = class BlockChain {
 
   gatherTxs(){
     let tx = this.txPool.getTx();
+
+    while ((tx != false) && (this.pending.length <= 10)) {
+      this.pending.push(tx.txData);
+      tx = this.txPool.getTx();
+    }
+
+    if (this.pending.length > 0) {
+      this.addBlockAsync(this.pending);
+    }
+    return
     //console.log(tx);
-    if ((tx == false) && (this.pending.length > 0)) {
-      this.addBlockAsync(this.pending);
-      return
-    }
-    if ((tx != false) && (this.pending.length < 10)) {
-      this.pending.push(tx.txData);
-      return
-    } else if ((tx != false) && (this.pending.length >= 10)) {
-      this.pending.push(tx.txData);
-      this.addBlockAsync(this.pending);
-      return
-    }
+    // if ((tx == false) && (this.pending.length > 0)) {
+    //   this.addBlockAsync(this.pending);
+    //   return
+    // }
+    // if ((tx != false) && (this.pending.length < 10)) {
+    //   this.pending.push(tx.txData);
+    //   return
+    // } else if ((tx != false) && (this.pending.length >= 10)) {
+    //   this.pending.push(tx.txData);
+    //   this.addBlockAsync(this.pending);
+    //   return
+    // }
   }
 
   addBlock(data){

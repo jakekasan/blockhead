@@ -17,7 +17,6 @@ module.exports = class Simulator {
     for (var i = 0; i < numberOfUsers; i++) {
       let name = potential_names[Math.floor(Math.random()*potential_names.length)] + " " + potential_surnames[Math.floor(Math.random()*potential_surnames.length)]
       let user = new User(name,"password",this.blockchain,this.txPool)
-      //this.blockchain.gatherTxs();
       users.push(user);
     }
     this.blockchain.findWallets();
@@ -34,16 +33,13 @@ module.exports = class Simulator {
   }
 
   runSimulator(numTxs){
-    // if (numTxs == undefined) {
-    //   let numTxs = this.numberOfTransactionsPerMinute;
-    // }
     for (let i = 0; i < numTxs; i++) {
-      (this.getRandomUser()).makePayment();
-      //this.blockchain.gatherTxs();
+      (new Promise((res,rej) => {
+        res(this.getRandomUser());
+      })).then(user => {
+        user.makePayment();
+      });
     }
-    //this.blockchain.print()
-    //this.blockchain.findWallets();
-
   }
 
   getRandomUser(){

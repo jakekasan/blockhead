@@ -8,19 +8,32 @@ module.exports = class TxPool {
 
   recieveTx(tx) {
     // is the transaction valid? If not, reject..
-    if (!this.validateTransaction(tx)) {
-      return false;
-    }
+    // if (!this.validateTransaction(tx)) {
+    //   return false;
+    // }
+
+    (new Promise((res,rej) => {
+      if (this.validateTransaction(tx)){
+        res(tx)
+      } else {
+        rej(tx)
+      }
+    })).then(tx => {
+      this.pool.push({
+        "txData": tx,
+        "txFee": JSON.parse(tx).inputs.map(input => { input.value }).reduce((acc,curr) => { acc + curr},0) - JSON.parse(tx).outputs.map(output => { output.value }).reduce((acc,curr) => { acc + curr},0)
+      });
+    });
 
     // includes pre-calculated fee for future sort function
-
-    this.pool.push({
-      //"txTime": Date.now(),
-      "txData": tx,
-      "txFee": JSON.parse(tx).inputs.map(input => { input.value }).reduce((acc,curr) => { acc + curr},0) - JSON.parse(tx).outputs.map(output => { output.value }).reduce((acc,curr) => { acc + curr},0)
-    });
-    //this.pool.push(tx);
-    return true;
+    //
+    // this.pool.push({
+    //   //"txTime": Date.now(),
+    //   "txData": tx,
+    //   "txFee": JSON.parse(tx).inputs.map(input => { input.value }).reduce((acc,curr) => { acc + curr},0) - JSON.parse(tx).outputs.map(output => { output.value }).reduce((acc,curr) => { acc + curr},0)
+    // });
+    // //this.pool.push(tx);
+    // return true;
   }
 
   getTx(){
