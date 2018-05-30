@@ -6,7 +6,7 @@ module.exports = class Gossip {
     this.blockchain = blockchain;
     this.txPool = txPool;
     this.publicKey = jsrsa.KEYUTIL.getPEM(this.blockchain.publicKey);
-    this.aliveSince = Date.now();
+    this.aliveSince = new Date(Date.now());
     this.constructMembers(knownAddrs);
     this.simulator = simulator;
   }
@@ -37,7 +37,6 @@ module.exports = class Gossip {
   }
 
   // ask for transactions
-
   getTransactions(){
     return this.txPool.getAllTransactions();
   }
@@ -66,6 +65,9 @@ module.exports = class Gossip {
   }
 
   checkOnAllMembers(){
+    if (this.members.length < 1) {
+      return;
+    }
     for (let member of this.members) {
       checkOnMember(member);
     }
@@ -84,7 +86,15 @@ module.exports = class Gossip {
     }
   }
 
-  createRandomTx(){
-      this.simulator.runSimulator(10);
+  update(){
+    this.blockchain.update();
+    this.checkOnAllMembers();
+  }
+
+  createRandomTx(amount){
+    if (amount == undefined) {
+      this.simulator.runSimulator(50);
+    }
+      this.simulator.runSimulator(amount);
   }
 }

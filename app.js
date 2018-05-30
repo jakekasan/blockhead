@@ -23,13 +23,18 @@ const router = require('./controllers/router.js');
 const bc = new BlockChain(1);
 const txPool = new TxPool("home",bc);
 bc.setTxPool(txPool);
-const gossip = new Gossip(bc,[],txPool);
 const simulator = new Simulator(bc,10,500,txPool);
+const gossip = new Gossip(bc,[],txPool,simulator);
 var app = express();
 
 app.use(bodyParser.json());
 
 router(app,gossip);
+
+var blockLoop = setInterval(() => {
+  console.log(" -- Loop -- ");
+  gossip.update();
+},1000);
 
 app.listen(8080, () => {
 

@@ -33,7 +33,7 @@ module.exports = class Block {
   }
 
   getObjectString(){
-    return JSON.stringify(getObject,null,2)
+    return JSON.stringify(this.getObject())
   }
 
   print(){

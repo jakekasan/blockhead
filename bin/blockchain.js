@@ -81,11 +81,26 @@ module.exports = class BlockChain {
     } else if ((tx != false) && (this.pending.length >= 4)) {
       this.pending.push(tx.txData);
       this.addBlock(this.pending);
+      console.log("Block mined, chain now at ",this.blocks.length);
       this.pending = [];
     }
   }
 
   addBlock(data){
+    data = addBlockPrep(data);
+
+    this.blocks.push(new Block(data,this.difficulty,this.blocks[this.blocks.length-1].hash));
+  }
+
+  addBlockAsync(data){
+    data = addBlockPrep(data);
+    new Promise((res,rej) => {
+      let newBlock = new Block(data,this.difficulty,this.blocks[this.blocks.length-1])
+      resolve(newBlock);
+    }).then(block => this.blocks.push(block)).catch(() => console.log("Failed to add a new block for whatever reason...");)
+  }
+
+  addBlockPrep(data){
     // add up Tx fees and add them as a single output transaction
     let fees = data.map(tx => { JSON.parse(tx).inputs.map(input => { return input.value}).reduce((acc,cur) => { acc + cur},0) - JSON.parse(tx).outputs.map(output => { return output.value }).reduce((acc,cur) => { acc + cur}) });
     if (fees > 0){
@@ -114,10 +129,8 @@ module.exports = class BlockChain {
       this.publicKey
     );
     data.push(newCoins.getTransactionString())
-
-    this.blocks.push(new Block(data,this.difficulty,this.blocks[this.blocks.length-1].hash));
+    return data;
   }
-
 
 
 
@@ -269,6 +282,28 @@ module.exports = class BlockChain {
     return outputs;
   }
 
+  getAllSpentOutputs(publicKey){
+    let outputs = [];
+    if (this.blocks.length < 1) {
+      return 0;
+    }
+    for (let block of this.blocks) {
+      for (let transaction of block.getData()) {
+        outputs = outputs.filter(txo => {
+          return transaction.inputs.map(input => { return ((input.owner == txo.owner) && (input.value == txo.value) && (input.blockHash == txo.blockHash) && (input.transHash == txo.transHash)) }).includes(true);
+        });
+        for (let output of transaction.outputs) {
+          if (output.owner == publicKey) {
+            let newOutput = new Output(output.owner,output.value);
+            newOutput.setHashes(block.hash,transaction.hash);
+            outputs.push(newOutput.getInput());
+          }
+        }
+      }
+    }
+    return outputs;
+  }
+
   getBalance(publicKey){
     let outputs = [];
     if (this.blocks.length < 1) {
@@ -295,12 +330,7 @@ module.exports = class BlockChain {
   }
 
   update(){
-    if (this.pending.length > 0) {
-      //console.log("Emptying pending transactions");
-      let transactions = this.pending.pop()
-      this.addBlock([transactions]);
-      //this.pending = [];
-    }
+    this.gatherTxs();
   }
 
   checkTransactionJSON(data){
@@ -315,11 +345,21 @@ module.exports = class BlockChain {
   }
 
   getString(){
-    toPrint = [];
-    for (block of this.blocks) {
-      toPrint.push(block.getDataString());
+    let toPrint = [];
+    console.log("Getting string of blockchain");
+    console.log("Length:",this.blocks.length);
+    for (let block of this.blocks) {
+      toPrint.push(block.getObject());
     }
     return JSON.stringify(toPrint);
+  }
+
+  getChain(){
+    let toPrint = [];
+    for (let block of this.blocks) {
+      toPrint.push(block.getObject());
+    }
+    return toPrint;
   }
 
   addToDatabase(wallet,password){
@@ -346,6 +386,10 @@ module.exports = class BlockChain {
     for (let wallet of wallets) {
       console.log(wallet.name,", Balance:",this.getBalance(wallet));
     }
+  }
+
+  getWalletObject(publicKey){
+
   }
 
 

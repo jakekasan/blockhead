@@ -28,12 +28,15 @@ module.exports = function(app,gossip){
     res.send(txPool.recieveTx(req.body));
   });
 
-  app.get('/transaction/random',(req,res) => {
+  app.get('/gossip/test',(req,res) => {
+    console.log("Transactions have been randomly submitted");
+    gossip.createRandomTx(req.param('num'));
     res.send("Transaction Submitted!");
   });
 
   app.get('/wallet',(req,res) => {
     console.log(req.body);
+    console.log(req.param('pubKey'));
     res.send(req.body);
   });
 
@@ -44,9 +47,9 @@ module.exports = function(app,gossip){
 
   app.get('/gossip/chain',(req,res) => {
     console.log(req.body);
-    res.send(JSON.stringify({
-      "blockchain":gossip.blockchain.getString()
-    }));
+    res.send({
+      "blocks":gossip.blockchain.getChain()
+    });
   });
 
   app.post('/gossip/chain',(req,res) => {
@@ -55,14 +58,14 @@ module.exports = function(app,gossip){
     res.send(result);
   });
 
-  app.get('/gossip/tx',(req,res) => {
+  app.get('/gossip/txs',(req,res) => {
     // return known transactions
-    let txs = gossip.getAllTransactions();
+    let txs = gossip.getTransactions();
     res.send(JSON.stringify(txs));
   });
 
   app.get('/gossip/info',(req,res) => {
-    res.send(JSON.stringify(gossip.getInfo()));
+    res.send(gossip.getInfo());
   });
 
 
