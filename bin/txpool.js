@@ -68,5 +68,31 @@ module.exports = class TxPool {
     return true;
   }
 
+  minedTransactions(data){
+    this.pool.filter(txObj => {
+      !(data.map(txB => {
+        if (txB.hash != txObj.txData.hash) {
+          return false;
+        } else if (txB.signature != txObj.txData.signature) {
+          return false;
+        } else {
+          return true;
+        }
+      }).includes(true));
+    });
+  }
+
+  signalSuccess(){
+    // block was mined
+    this.sent.filter(() => false)
+  }
+
+  signalFailure(){
+    // block was not mined
+    for (let el of this.sent){
+      this.pool.push(el);
+    }
+  }
+
 
 }

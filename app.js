@@ -32,7 +32,6 @@ app.use(bodyParser.json());
 router(app,gossip);
 
 var blockLoop = setInterval(() => {
-  console.log(" -- Loop -- ");
   gossip.update();
 },1000);
 

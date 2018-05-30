@@ -30,8 +30,8 @@ module.exports = function(app,gossip){
 
   app.get('/gossip/test',(req,res) => {
     console.log("Transactions have been randomly submitted");
+    res.send("Transactions Submitted!");
     gossip.createRandomTx(req.param('num'));
-    res.send("Transaction Submitted!");
   });
 
   app.get('/wallet',(req,res) => {

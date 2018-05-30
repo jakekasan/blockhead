@@ -20,6 +20,7 @@ module.exports = class BlockChain {
     this.privateKey = keyObj.prvKeyObj;  //jsrsa.KEYUTIL.getPEM(keyObj.prvKeyObj,"PKCS8PRV");
     this.masterHash = cjs.SHA256(pwd);
     this.db = new DB(this);
+    this.isMining = false;
 
     this.txPool = undefined;
   }
@@ -32,7 +33,7 @@ module.exports = class BlockChain {
   }
 
   createGenesisBlock(){
-    let genesisOutput = new Output(this.masterWallet.publicKey,100000000);
+    let genesisOutput = new Output(this.masterWallet.publicKey,1000000);
     let genesisTransaction = new Transaction([],[genesisOutput.getOutput()],this.privateKey,this,this.publicKey);
     this.blocks.push(new Block([genesisTransaction.getTransactionString()],this.difficulty));
     console.log("Blockchain created, current length:",this.blocks.length);
@@ -70,34 +71,44 @@ module.exports = class BlockChain {
 
   gatherTxs(){
     let tx = this.txPool.getTx();
-    if (tx == false) {
+    //console.log(tx);
+    if ((tx == false) && (this.pending.length > 0)) {
+      this.addBlockAsync(this.pending);
       return
     }
-    if (tx == undefined) {
+    if ((tx != false) && (this.pending.length < 10)) {
+      this.pending.push(tx.txData);
       return
-    }
-    if ((tx != false) && (this.pending.length < 4)) {
+    } else if ((tx != false) && (this.pending.length >= 10)) {
       this.pending.push(tx.txData);
-    } else if ((tx != false) && (this.pending.length >= 4)) {
-      this.pending.push(tx.txData);
-      this.addBlock(this.pending);
-      console.log("Block mined, chain now at ",this.blocks.length);
-      this.pending = [];
+      this.addBlockAsync(this.pending);
+      return
     }
   }
 
   addBlock(data){
-    data = addBlockPrep(data);
+    data = this.addBlockPrep(data);
 
     this.blocks.push(new Block(data,this.difficulty,this.blocks[this.blocks.length-1].hash));
   }
 
   addBlockAsync(data){
-    data = addBlockPrep(data);
-    new Promise((res,rej) => {
-      let newBlock = new Block(data,this.difficulty,this.blocks[this.blocks.length-1])
-      resolve(newBlock);
-    }).then(block => this.blocks.push(block)).catch(() => console.log("Failed to add a new block for whatever reason...");)
+    //data = this.addBlockPrep(data);
+    console.log("Mining new transactions");
+    this.isMining = true;
+    (new Promise((res,rej) => {
+      let newBlock = new Block(this.addBlockPrep(data),this.difficulty,this.blocks[this.blocks.length-1].hash);
+      res(newBlock);
+    })).then(block => {
+      this.blocks.push(block);
+      this.txPool.signalSuccess();
+      console.log("Block mined!");
+    }).catch(() => {
+      this.txPool.signalFailure();
+    }).finally(() => {
+      this.isMining = false;
+      this.pending = [];
+    });
   }
 
   addBlockPrep(data){
@@ -330,7 +341,11 @@ module.exports = class BlockChain {
   }
 
   update(){
-    this.gatherTxs();
+    if (!this.isMining){
+      this.gatherTxs();
+    } else {
+      return;
+    }
   }
 
   checkTransactionJSON(data){
@@ -384,7 +399,7 @@ module.exports = class BlockChain {
     }
     //console.log("\n\n\tWallets:");
     for (let wallet of wallets) {
-      console.log(wallet.name,", Balance:",this.getBalance(wallet));
+      console.log(wallet.publicKey,", Balance:",this.getBalance(wallet));
     }
   }
 
