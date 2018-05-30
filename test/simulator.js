@@ -33,7 +33,10 @@ module.exports = class Simulator {
     }
   }
 
-  runSimulator(){
+  runSimulator(numTxs){
+    if (!numTxs) {
+      let numTxs = this.numberOfTransactionsPerMinute;
+    }
     for (let i = 0; i < this.numberOfTransactionsPerMinute; i++){
       (this.getRandomUser()).makePayment();
       this.blockchain.gatherTxs();

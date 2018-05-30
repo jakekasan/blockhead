@@ -7,15 +7,18 @@ module.exports = class TxPool {
    }
 
   recieveTx(tx) {
+    // is the transaction valid? If not, reject..
     if (!this.validateTransaction(tx)) {
       return false;
     }
+
+    // includes pre-calculated fee for future sort function
+
     this.pool.push({
       //"txTime": Date.now(),
       "txData": tx,
       "txFee": JSON.parse(tx).inputs.map(input => { input.value }).reduce((acc,curr) => { acc + curr},0) - JSON.parse(tx).outputs.map(output => { output.value }).reduce((acc,curr) => { acc + curr},0)
     });
-
     //this.pool.push(tx);
     return true;
   }
@@ -24,12 +27,16 @@ module.exports = class TxPool {
     if (this.pool.length < 1) {
       return false;
     }
+
+    // here is where the selection logic will go in the future
+    // i.e. the txs with the highest fees will go through
     let chosen = this.pool.pop(0);
     this.sent.push(chosen);
     return chosen;
   }
 
   getAllTransactions(){
+    // return transactions-only list (no fees)
     let txList = this.pool.map(tx => tx.txData);
     return txList;
   }

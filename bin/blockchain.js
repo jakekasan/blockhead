@@ -16,24 +16,23 @@ module.exports = class BlockChain {
     if (!keyObj) {
         keyObj = jsrsa.KEYUTIL.generateKeypair("RSA",1024);
     }
-    this.publicKey = keyObj.pubKeyObj;
-    this.privateKey = keyObj.prvKeyObj;
+    this.publicKey = keyObj.pubKeyObj;  //jsrsa.KEYUTIL.getPEM(keyObj.pubKeyObj);
+    this.privateKey = keyObj.prvKeyObj;  //jsrsa.KEYUTIL.getPEM(keyObj.prvKeyObj,"PKCS8PRV");
     this.masterHash = cjs.SHA256(pwd);
     this.db = new DB(this);
 
     this.txPool = undefined;
-
   }
 
   setTxPool(txPool){
     this.txPool = txPool;
     this.masterWallet = new Wallet("admin",this,this.privateKey,this.publicKey,this.txPool);
     this.addToDatabase(this.masterWallet,this.pwd);
+    this.createGenesisBlock();
   }
 
   createGenesisBlock(){
     let genesisOutput = new Output(this.masterWallet.publicKey,100000000);
-
     let genesisTransaction = new Transaction([],[genesisOutput.getOutput()],this.privateKey,this,this.publicKey);
     this.blocks.push(new Block([genesisTransaction.getTransactionString()],this.difficulty));
     console.log("Blockchain created, current length:",this.blocks.length);
@@ -228,9 +227,15 @@ module.exports = class BlockChain {
   }
 
   getOutputs(publicKey,amount){
-    var outputs = this.getAllOutputs(publicKey);
+    var outputs = this.getAllUnspentOutputs(publicKey);
     var txOutputs = [];
     var balance = 0;
+
+    //console.log(outputs);
+
+    if (outputs == 0) {
+      return [];
+    }
 
     for (let output of outputs.slice().reverse()){
       balance = balance + output.value;
@@ -239,10 +244,10 @@ module.exports = class BlockChain {
         return txOutputs;
       }
     }
-    return false;
+    return [];
   }
 
-  getAllOutputs(publicKey){
+  getAllUnspentOutputs(publicKey){
     let outputs = [];
     if (this.blocks.length < 1) {
       return 0;

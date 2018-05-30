@@ -13,7 +13,9 @@ module.exports = function(app,gossip){
   app.get('/',(req,res) => {
     console.log("[GET] /");
     res.setHeader('Content-Type','application/json');
-    res.send(blockchain.getString());
+    res.send(JSON.stringify({
+      "message":"Hello!"
+    }));
   });
 
   app.get('/update',(req,res) => {
@@ -26,6 +28,10 @@ module.exports = function(app,gossip){
     res.send(txPool.recieveTx(req.body));
   });
 
+  app.get('/transaction/random',(req,res) => {
+    res.send("Transaction Submitted!");
+  });
+
   app.get('/wallet',(req,res) => {
     console.log(req.body);
     res.send(req.body);
@@ -36,21 +42,28 @@ module.exports = function(app,gossip){
     res.send(req.body);
   });
 
-  app.get('/gossip',(req,res) => {
+  app.get('/gossip/chain',(req,res) => {
     console.log(req.body);
-    res.send({
-      "blockchain":gossip.blockchain.getString());
-    });
+    res.send(JSON.stringify({
+      "blockchain":gossip.blockchain.getString()
+    }));
   });
 
-  app.post('/gossip',(req,res) => {
+  app.post('/gossip/chain',(req,res) => {
     console.log(req.body);
-    gossip.validateNewBlockchain(JSON.parse(req.body.blockchain),JSON.parse(req.body.txs));
+    let result = gossip.validateNewBlockchain(JSON.parse(req.body.blockchain),JSON.parse(req.body.txs));
+    res.send(result);
   });
 
   app.get('/gossip/tx',(req,res) => {
     // return known transactions
-  })
+    let txs = gossip.getAllTransactions();
+    res.send(JSON.stringify(txs));
+  });
+
+  app.get('/gossip/info',(req,res) => {
+    res.send(JSON.stringify(gossip.getInfo()));
+  });
 
 
 
