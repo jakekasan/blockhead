@@ -80,7 +80,6 @@ describe("in-memory blockchain", () => {
 
         it("new block with incorrect prevHash is rejected", () => {
             let block = makeBlock("bar", "baz")
-
             expect(() => bc.addBlock(block)).to.throw(InvalidBlockError)
         })
 
