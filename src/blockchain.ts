@@ -1,9 +1,12 @@
 import { IBlock, IBlockContents } from "../src/block"
 
+export class InvalidBlockError extends Error {}
+
 export interface IBlockchain {
     size: number,
     getBlockByHash: (hash: string) => IBlock,
-    getLastBlock: () => IBlock
+    getLastBlock: () => IBlock,
+    addBlock: (block: IBlock) => void
 }
 
 export class InMemoryBlockchain implements IBlockchain {
@@ -31,6 +34,14 @@ export class InMemoryBlockchain implements IBlockchain {
         }
 
         return result
+    }
+
+    addBlock = (block: IBlock) => {
+        const lastBlock = this.getLastBlock()
+        if (block.prevHash != lastBlock.hash) {
+            throw new InvalidBlockError(`New block's 'prevHash' of ${block.prevHash} does not match latest block's 'hash' of ${lastBlock.hash}`)
+        }
+        this.blocks.push(block);
     }
 }
 

@@ -1,6 +1,6 @@
 import { expect } from "chai"
 import { IBlock } from "../src/block"
-import { chainIsValid, IBlockchainComparison, makeShouldAccept } from "../src/blockchain";
+import { chainIsValid, IBlockchain, IBlockchainComparison, InvalidBlockError, makeShouldAccept } from "../src/blockchain";
 import { InMemoryBlockchain as Blockchain } from "../src/blockchain";
 
 
@@ -68,6 +68,26 @@ describe("in-memory blockchain", () => {
             let b2 = new Blockchain([makeBlock("foo", null)]);
             let result = shouldAccept(b1, b2)
             expect(result).to.equal(true)
+        })
+    })
+
+    describe("adding new blocks", () => {
+        let bc: IBlockchain;
+
+        beforeEach(() => {
+            bc = new Blockchain([makeBlock("foo", null)])
+        })
+
+        it("new block with incorrect prevHash is rejected", () => {
+            let block = makeBlock("bar", "baz")
+
+            expect(() => bc.addBlock(block)).to.throw(InvalidBlockError)
+        })
+
+        it("new block with correct prevHash becomes latest bock", () => {
+            let block = makeBlock("bar", "foo")
+            bc.addBlock(block)
+            expect(bc.getLastBlock().hash).to.equal(block.hash)
         })
     })
 })
