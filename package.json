@@ -4,7 +4,7 @@
   "description": "A blockchain thing.",
   "main": "index.js",
   "scripts": {
-    "build": "webpack build",
+    "build": "tsc --project tsconfig.build.json",
     "test": "mocha"
   },
   "repository": {
